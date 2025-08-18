@@ -1,0 +1,326 @@
+PS C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner> ./gradlew compileDebugKotlin --info
+Initialized native services in: C:\Users\ARTUR\.gradle\native
+Initialized jansi services in: C:\Users\ARTUR\.gradle\native
+Found daemon DaemonInfo{pid=35204, address=[da2a46ff-c898-4d7f-b068-55ffdcc03e41 port:60413, addresses:[/127.0.0.1]], state=Idle, lastBusy=1755470640714, context=DefaultDaemonContext[uid=4ae3d730-da0d-47c5-aa88-1bc9d1c950ad,javaHome=C:\Program Files\Java\jre-1.8,javaVersion=8,javaVendor=Oracle Corporation,daemonRegistryDir=C:\Users\ARTUR\.gradle\daemon,pid=35204,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-Xmx2048m,-Dfile.encoding=UTF-8,-Duser.country=RU,-Duser.language=ru,-Duser.variant]} however its context does not match the desired criteria.
+JVM is incompatible.
+Wanted: DaemonRequestContext{jvmCriteria=C:\Program Files\Eclipse Adoptium\jdk-21.0.8.9-hotspot (no JDK specified, using current Java home), daemonOpts=[-Xmx2048m, -Dfile.encoding=UTF-8, -Duser.country=RU, -Duser.language=ru, -Duser.variant], applyInstrumentationAgent=true, nativeServicesMode=ENABLED, priority=NORMAL}
+Actual: DefaultDaemonContext[uid=4ae3d730-da0d-47c5-aa88-1bc9d1c950ad,javaHome=C:\Program Files\Java\jre-1.8,javaVersion=8,javaVendor=Oracle Corporation,daemonRegistryDir=C:\Users\ARTUR\.gradle\daemon,pid=35204,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-Xmx2048m,-Dfile.encoding=UTF-8,-Duser.country=RU,-Duser.language=ru,-Duser.variant]
+
+  Looking for a different daemon...
+The client will now receive all logging from the daemon (pid: 12864). The daemon log file: C:\Users\ARTUR\.gradle\daemon\8.13\daemon-12864.out.log
+Starting 4th build in daemon [uptime: 4 mins 2.537 secs, performance: 100%, GC rate: 0.00/s, heap usage: 0% of 2 GiB]
+Using 8 worker leases.
+Now considering [C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner] as hierarchies to watch
+Watching the file system is configured to be enabled if available
+File system watching is active
+Starting Build
+Settings evaluated using settings file 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\settings.gradle.kts'.
+Projects loaded. Root project using build file 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\build.gradle.kts'.
+Included projects: [root project 'InventoryScanner', project ':app']
+
+> Configure project :
+Evaluating root project 'InventoryScanner' using build file 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\build.gradle.kts'.
+Resolved plugin [id: 'com.android.application', version: '8.12.0', apply: false]
+Resolved plugin [id: 'org.jetbrains.kotlin.android', version: '2.0.21', apply: false]
+
+> Configure project :app
+Evaluating project ':app' using build file 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\build.gradle.kts'.
+Resolved plugin [id: 'com.android.application', version: '8.12.0']
+Resolved plugin [id: 'org.jetbrains.kotlin.android', version: '2.0.21']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.compose', version: '2.0.21']
+Resolved plugin [id: 'kotlin-kapt']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+Detected Android Gradle Plugin compose compiler configuration
+Detected Android Gradle Plugin compose compiler configuration
+Detected Android Gradle Plugin compose compiler configuration
+Detected Android Gradle Plugin compose compiler configuration
+Detected Android Gradle Plugin compose compiler configuration
+All projects evaluated.
+Adding -Xuse-inline-scopes-numbers Kotlin compiler flag for task :app:compileDebugKotlin
+Task name matched 'compileDebugKotlin'
+Selected primary task 'compileDebugKotlin' from project :
+Tasks to be executed: [task ':app:checkKotlinGradlePluginConfigurationErrors', task ':app:preBuild', task ':app:preDebugBuild', task ':app:checkDebugAarMetadata', task ':app:generateDebugResValues', task ':app:mapDebugSourceSetP
+aths', task ':app:generateDebugResources', task ':app:mergeDebugResources', task ':app:packageDebugResources', task ':app:parseDebugLocalResources', task ':app:createDebugCompatibleScreenManifests', task ':app:extractDeepLinksDe
+bug', task ':app:processDebugMainManifest', task ':app:processDebugManifest', task ':app:processDebugManifestForPackage', task ':app:processDebugResources', task ':app:kaptGenerateStubsDebugKotlin', task ':app:kaptDebugKotlin', task ':app:compileDebugKotlin']
+Tasks that were excluded: []
+Resolve mutations for :app:checkKotlinGradlePluginConfigurationErrors (Thread[#305,Execution worker,5,main]) started.
+:app:checkKotlinGradlePluginConfigurationErrors (Thread[#304,included builds,5,main]) started.
+
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED                                                                                                                                                                      
+Skipping task ':app:checkKotlinGradlePluginConfigurationErrors' as task onlyIf 'errorDiagnostics are present' is false.
+Resolve mutations for :app:preBuild (Thread[#304,included builds,5,main]) started.
+:app:preBuild (Thread[#304,included builds,5,main]) started.
+
+> Task :app:preBuild UP-TO-DATE                                                                                                                                                                                                     
+Skipping task ':app:preBuild' as it has no actions.
+Resolve mutations for :app:preDebugBuild (Thread[#304,included builds,5,main]) started.
+:app:preDebugBuild (Thread[#304,included builds,5,main]) started.
+
+> Task :app:preDebugBuild UP-TO-DATE                                                                                                                                                                                                
+Skipping task ':app:preDebugBuild' as it has no actions.
+Resolve mutations for :app:checkDebugAarMetadata (Thread[#304,included builds,5,main]) started.
+:app:checkDebugAarMetadata (Thread[#304,included builds,5,main]) started.
+
+> Task :app:checkDebugAarMetadata UP-TO-DATE                                                                                                                                                                                        
+Caching disabled for task ':app:checkDebugAarMetadata' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:checkDebugAarMetadata' as it is up-to-date.
+Resolve mutations for :app:generateDebugResValues (Thread[#304,included builds,5,main]) started.
+:app:generateDebugResValues (Thread[#304,included builds,5,main]) started.
+
+> Task :app:generateDebugResValues UP-TO-DATE                                                                                                                                                                                       
+Caching disabled for task ':app:generateDebugResValues' because:
+  Build cache is disabled
+Skipping task ':app:generateDebugResValues' as it is up-to-date.
+Resolve mutations for :app:mapDebugSourceSetPaths (Thread[#304,included builds,5,main]) started.
+:app:mapDebugSourceSetPaths (Thread[#304,included builds,5,main]) started.
+
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE                                                                                                                                                                                       
+Caching disabled for task ':app:mapDebugSourceSetPaths' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:mapDebugSourceSetPaths' as it is up-to-date.
+Resolve mutations for :app:generateDebugResources (Thread[#304,included builds,5,main]) started.
+:app:generateDebugResources (Thread[#304,included builds,5,main]) started.
+
+> Task :app:generateDebugResources UP-TO-DATE                                                                                                                                                                                       
+Caching disabled for task ':app:generateDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:generateDebugResources' as it is up-to-date.
+Resolve mutations for :app:mergeDebugResources (Thread[#304,included builds,5,main]) started.
+:app:mergeDebugResources (Thread[#304,included builds,5,main]) started.
+
+> Task :app:mergeDebugResources UP-TO-DATE                                                                                                                                                                                          
+Caching disabled for task ':app:mergeDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:mergeDebugResources' as it is up-to-date.
+Resolve mutations for :app:packageDebugResources (Thread[#306,Execution worker Thread 2,5,main]) started.
+:app:packageDebugResources (Thread[#306,Execution worker Thread 2,5,main]) started.
+
+> Task :app:packageDebugResources UP-TO-DATE                                                                                                                                                                                        
+Caching disabled for task ':app:packageDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:packageDebugResources' as it is up-to-date.
+Resolve mutations for :app:parseDebugLocalResources (Thread[#306,Execution worker Thread 2,5,main]) started.
+:app:parseDebugLocalResources (Thread[#306,Execution worker Thread 2,5,main]) started.
+
+> Task :app:parseDebugLocalResources UP-TO-DATE                                                                                                                                                                                     
+Caching disabled for task ':app:parseDebugLocalResources' because:
+  Build cache is disabled
+Skipping task ':app:parseDebugLocalResources' as it is up-to-date.
+Resolve mutations for :app:createDebugCompatibleScreenManifests (Thread[#304,included builds,5,main]) started.
+:app:createDebugCompatibleScreenManifests (Thread[#304,included builds,5,main]) started.
+
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE                                                                                                                                                                         
+Caching disabled for task ':app:createDebugCompatibleScreenManifests' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:createDebugCompatibleScreenManifests' as it is up-to-date.
+Resolve mutations for :app:extractDeepLinksDebug (Thread[#304,included builds,5,main]) started.
+:app:extractDeepLinksDebug (Thread[#304,included builds,5,main]) started.
+
+> Task :app:extractDeepLinksDebug UP-TO-DATE                                                                                                                                                                                        
+Caching disabled for task ':app:extractDeepLinksDebug' because:
+  Build cache is disabled
+Skipping task ':app:extractDeepLinksDebug' as it is up-to-date.
+Resolve mutations for :app:processDebugMainManifest (Thread[#304,included builds,5,main]) started.
+:app:processDebugMainManifest (Thread[#304,included builds,5,main]) started.
+
+> Task :app:processDebugMainManifest UP-TO-DATE                                                                                                                                                                                     
+Caching disabled for task ':app:processDebugMainManifest' because:
+  Build cache is disabled
+Skipping task ':app:processDebugMainManifest' as it is up-to-date.
+Resolve mutations for :app:processDebugManifest (Thread[#304,included builds,5,main]) started.
+:app:processDebugManifest (Thread[#304,included builds,5,main]) started.
+
+> Task :app:processDebugManifest UP-TO-DATE                                                                                                                                                                                         
+Caching disabled for task ':app:processDebugManifest' because:
+  Build cache is disabled
+Skipping task ':app:processDebugManifest' as it is up-to-date.
+Resolve mutations for :app:processDebugManifestForPackage (Thread[#304,included builds,5,main]) started.
+:app:processDebugManifestForPackage (Thread[#304,included builds,5,main]) started.
+
+> Task :app:processDebugManifestForPackage UP-TO-DATE                                                                                                                                                                               
+Custom actions are attached to task ':app:processDebugManifestForPackage'.
+Caching disabled for task ':app:processDebugManifestForPackage' because:
+  Build cache is disabled
+Skipping task ':app:processDebugManifestForPackage' as it is up-to-date.
+Resolve mutations for :app:processDebugResources (Thread[#304,included builds,5,main]) started.
+:app:processDebugResources (Thread[#304,included builds,5,main]) started.
+
+> Task :app:processDebugResources UP-TO-DATE                                                                                                                                                                                        
+Caching disabled for task ':app:processDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:processDebugResources' as it is up-to-date.
+Resolve mutations for :app:kaptGenerateStubsDebugKotlin (Thread[#304,included builds,5,main]) started.
+:app:kaptGenerateStubsDebugKotlin (Thread[#306,Execution worker Thread 2,5,main]) started.
+
+> Task :app:kaptGenerateStubsDebugKotlin UP-TO-DATE                                                                                                                                                                                 
+Adding -Xuse-inline-scopes-numbers Kotlin compiler flag for task :app:compileDebugAndroidTestKotlin
+Caching disabled for task ':app:kaptGenerateStubsDebugKotlin' because:
+  Build cache is disabled
+Skipping task ':app:kaptGenerateStubsDebugKotlin' as it is up-to-date.
+Resolve mutations for :app:kaptDebugKotlin (Thread[#306,Execution worker Thread 2,5,main]) started.
+:app:kaptDebugKotlin (Thread[#306,Execution worker Thread 2,5,main]) started.
+
+> Task :app:kaptDebugKotlin UP-TO-DATE                                                                                                                                                                                              
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+Caching disabled for task ':app:kaptDebugKotlin' because:
+  Build cache is disabled
+Skipping task ':app:kaptDebugKotlin' as it is up-to-date.
+Resolve mutations for :app:compileDebugKotlin (Thread[#306,Execution worker Thread 2,5,main]) started.
+:app:compileDebugKotlin (Thread[#306,Execution worker Thread 2,5,main]) started.
+
+> Task :app:compileDebugKotlin FAILED
+Caching disabled for task ':app:compileDebugKotlin' because:
+  Build cache is disabled
+Task ':app:compileDebugKotlin' is not up-to-date because:
+  Task has failed previously.
+The input changes require a full rebuild for incremental task ':app:compileDebugKotlin'.
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\kotlin', not found
+file or directory 'C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\debug\java', not found
+Kotlin source files: C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\java\com\example\inventoryscanner\AppDatabase.kt, C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\java\com\example\invent
+oryscanner\InventoryEntities.kt, C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\java\com\example\inventoryscanner\InventoryRepository.kt, C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\jav
+a\com\example\inventoryscanner\InventoryViewModel.kt, C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\java\com\example\inventoryscanner\KitTemplate.kt, C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app
+\src\main\java\com\example\inventoryscanner\MainActivity.kt, C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\java\com\example\inventoryscanner\TemplateLoader.kt, C:\Users\ARTUR\AndroidStudioProjects\InventoryS
+canner\app\src\main\java\com\example\inventoryscanner\TimeUtils.kt, C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\java\com\example\inventoryscanner\ui\theme\Color.kt, C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\java\com\example\inventoryscanner\ui\theme\Theme.kt, C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\src\main\java\com\example\inventoryscanner\ui\theme\Type.kt
+Java source files: C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\build\generated\source\kapt\debug\com\example\inventoryscanner\data\AppDatabase_Impl.java, C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\bu
+ild\generated\source\kapt\debug\com\example\inventoryscanner\data\InventoryItemDao_Impl.java, C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\build\generated\source\kapt\debug\com\example\inventoryscanner\data\InventoryLogDao_Impl.java
+Script source files:
+Script file extensions:
+Using Kotlin/JVM incremental compilation
+[KOTLIN] Kotlin compilation 'jdkHome' argument: null
+Options for KOTLIN DAEMON: IncrementalCompilationOptions(super=CompilationOptions(compilerMode=INCREMENTAL_COMPILER, targetPlatform=JVM, reportCategories=[0, 3], reportSeverity=2, requestedCompilationResults=[0], kotlinScriptExt
+ensions=[]), areFileChangesKnown=false, modifiedFiles=null, deletedFiles=null, classpathChanges=NotAvailableForNonIncrementalRun, workingDir=C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\build\kotlin\compileDebugKotl
+in\cacheable, multiModuleICSettings=MultiModuleICSettings(buildHistoryFile=C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\build\kotlin\compileDebugKotlin\local-state\build-history.bin, useModuleDetection=true), usePre
+ciseJavaTracking=true, icFeatures=IncrementalCompilationFeatures(withAbiSnapshot=false, preciseCompilationResultsBackup=true, keepIncrementalCompilationCachesInMemory=true, enableUnsafeIncrementalCompilationForMultiplatform=fals
+e), outputFiles=[C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\build\tmp\kotlin-classes\debug, C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\build\kotlin\compileDebugKotlin\cacheable, C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner\app\build\kotlin\compileDebugKotlin\local-state])
+e: file:///C:/Users/ARTUR/AndroidStudioProjects/InventoryScanner/app/src/main/java/com/example/inventoryscanner/MainActivity.kt:36:41 Unresolved reference 'animateItemPlacement'.
+e: file:///C:/Users/ARTUR/AndroidStudioProjects/InventoryScanner/app/src/main/java/com/example/inventoryscanner/MainActivity.kt:37:36 Unresolved reference 'animateContentSize'.
+e: file:///C:/Users/ARTUR/AndroidStudioProjects/InventoryScanner/app/src/main/java/com/example/inventoryscanner/MainActivity.kt:363:14 Unresolved reference 'animateContentSize'.
+Finished executing kotlin compiler using DAEMON strategy
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1s
+16 actionable tasks: 1 executed, 15 up-to-date
+Watched directory hierarchies: [C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner]
+PS C:\Users\ARTUR\AndroidStudioProjects\InventoryScanner>      

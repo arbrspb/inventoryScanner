@@ -1,0 +1,12 @@
+[
+  { "code": "SUB-01", "name": "Сабвуфер 1" },
+  { "code": "SUB-02", "name": "Сабвуфер 2" },
+  { "code": "MIX-01", "name": "Микшер" },
+  { "code": "COL-L", "name": "Колонка левая" },
+  { "code": "COL-R", "name": "Колонка правая" },
+  { "code": "CAB-XLR-1" },
+  { "code": "CAB-XLR-2" },
+  { "code": "CAB-XLR-3" },
+  { "code": "CAB-POWER-1" },
+  { "code": "MIC-01" }
+]
