@@ -36,6 +36,7 @@ import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.Crossfade
 import androidx.compose.ui.graphics.Color
