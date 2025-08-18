@@ -14,6 +14,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -345,6 +346,11 @@ fun EquipmentRow(
         animationSpec = tween(durationMillis = 550),
         label = "rowHighlight"
     )
+    val rowHeight by animateDpAsState(
+        targetValue = if (justChanged) 60.dp else 44.dp,
+        animationSpec = tween(durationMillis = 500),
+        label = "rowHeight"
+    )
 
     // Анимация цвета количества (опционально)
     val qtyAnimColor by animateColorAsState(
@@ -357,8 +363,8 @@ fun EquipmentRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(rowHeight)
             .padding(vertical = 6.dp)
-            .animateContentSize()
             .background(
                 color = highlightColor,
                 shape = RoundedCornerShape(4.dp)

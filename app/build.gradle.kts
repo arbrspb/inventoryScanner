@@ -49,8 +49,8 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    // Явно указываем версию foundation для поддержки animateContentSize/animateItemPlacement:
-    implementation("androidx.compose.foundation:foundation:1.6.7")
+    implementation(platform("androidx.compose:compose-bom:2024.09.00"))
+    implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.animation:animation")
 
     testImplementation(libs.junit)
