@@ -9,27 +9,52 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
 import androidx.compose.material3.IconButton
-import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.inventoryscanner.ui.theme.InventoryScannerTheme
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-//private val overscroll: Any
-//private val overscroll: Any
 private const val CAMERA_REQ = 123
 
 class MainActivity : ComponentActivity() {
@@ -69,7 +94,6 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                         onResetClicked = { inventoryViewModel.resetAllCounts() },
-                        onReturnClicked = { inventoryViewModel.markReturned() },
                         onToggleCode = { code -> inventoryViewModel.onBarcodeScanned(code) },
                         onDeleteCode = { code -> inventoryViewModel.deleteItem(code, deleteLogs = false) },
                         onIncQuantity = { code -> inventoryViewModel.incQuantity(code) },
@@ -127,6 +151,13 @@ private fun playTone(tone: Int, durationMs: Int = 120) {
     toneGen?.startTone(tone, durationMs)
 }
 
+// ЕДИНСТВЕННАЯ версия функции форматирования времени
+private fun formatStatusTimeUi(ts: Long?): String {
+    if (ts == null) return "—"
+    val df = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault())
+    return df.format(java.util.Date(ts))
+}
+
 @Composable
 fun InventoryScannerScreen(
     modifier: Modifier = Modifier,
@@ -137,7 +168,6 @@ fun InventoryScannerScreen(
     kitCheckState: KitCheckState,
     onScanClicked: () -> Unit,
     onResetClicked: () -> Unit,
-    onReturnClicked: () -> Unit,
     onToggleCode: (String) -> Unit,
     onDeleteCode: (String) -> Unit,
     onIncQuantity: (String) -> Unit,
@@ -146,14 +176,14 @@ fun InventoryScannerScreen(
     onKitCheck: () -> Unit,
     onDismissKitDialog: () -> Unit
 ) {
-
     val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(12.dp)
     ) {
+        // Порядок кнопок как был: Скан, Сброс, Сверка
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
                 onClick = onScanClicked,
@@ -176,18 +206,30 @@ fun InventoryScannerScreen(
 
         Spacer(Modifier.height(8.dp))
 
-        if (itemStatus == ItemStatus.CHECKED_OUT && !isProcessing) {
-            Button(
-                onClick = onReturnClicked,
-                modifier = Modifier.fillMaxWidth()
-            ) { Text("Вернуть последний") }
-            Spacer(Modifier.height(8.dp))
+        // Фиксированное белое поле статуса в одну строку (чтобы список не прыгал)
+        val statusLine = when {
+            message == "Нажмите повторно для возврата" -> message
+            itemStatus == ItemStatus.CHECKED_OUT -> "ВЗЯТ."
+            itemStatus == ItemStatus.AVAILABLE -> "ВОЗВРАЩЁН."
+            itemStatus == ItemStatus.ERROR -> "ОШИБКА."
+            else -> ""
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(36.dp)
+                .background(Color.White),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                text = statusLine,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Clip,
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
 
-        Text(
-            text = if (isProcessing) "$message ..." else message,
-            style = MaterialTheme.typography.bodyMedium
-        )
         Spacer(Modifier.height(8.dp))
 
         LazyColumn(
@@ -224,18 +266,12 @@ fun InventoryScannerScreen(
                     Text("Шаблон: ${kitCheckState.matched}/${kitCheckState.totalTemplate} (${coverage}%)")
                     if (kitCheckState.missing.isNotEmpty()) {
                         Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Не найдено (${kitCheckState.missing.size}):",
-                            style = MaterialTheme.typography.labelSmall
-                        )
+                        Text("Не найдено (${kitCheckState.missing.size}):", style = MaterialTheme.typography.labelSmall)
                         Text(kitCheckState.missing.joinToString(", "))
                     }
                     if (kitCheckState.extra.isNotEmpty()) {
                         Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Лишние (${kitCheckState.extra.size}):",
-                            style = MaterialTheme.typography.labelSmall
-                        )
+                        Text("Лишние (${kitCheckState.extra.size}):", style = MaterialTheme.typography.labelSmall)
                         Text(kitCheckState.extra.joinToString(", "))
                     }
                     if (kitCheckState.missing.isEmpty() && kitCheckState.extra.isEmpty()) {
@@ -244,9 +280,7 @@ fun InventoryScannerScreen(
                     }
                 }
             },
-            confirmButton = {
-                TextButton(onClick = onDismissKitDialog) { Text("OK") }
-            }
+            confirmButton = { TextButton(onClick = onDismissKitDialog) { Text("OK") } }
         )
     }
 }
@@ -311,8 +345,6 @@ fun EquipmentRow(
     }
 
     val statusText = if (item.status == ItemStatus.CHECKED_OUT) "ВЗЯТО" else "Свободно"
-    val statusColor = if (item.status == ItemStatus.CHECKED_OUT)
-        MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
 
     Row(
         modifier = Modifier
@@ -326,8 +358,9 @@ fun EquipmentRow(
             Text(
                 text = "Статус: $statusText (взят раз: ${item.takenCount})",
                 style = MaterialTheme.typography.bodySmall,
-                color = statusColor
+                color = MaterialTheme.colorScheme.onSurface
             )
+            // Дата — под статусом, слева
             Text(
                 text = "Изм: ${formatStatusTime(item.lastStatusTs)}",
                 style = MaterialTheme.typography.labelSmall,
@@ -377,7 +410,7 @@ fun EquipmentRow(
 @Composable
 fun InventoryScannerPreview() {
     InventoryScannerScreen(
-        message = "Пример",
+        message = "",
         isProcessing = false,
         itemStatus = ItemStatus.AVAILABLE,
         items = listOf(
@@ -387,7 +420,6 @@ fun InventoryScannerPreview() {
         kitCheckState = KitCheckState(),
         onScanClicked = {},
         onResetClicked = {},
-        onReturnClicked = {},
         onToggleCode = {},
         onDeleteCode = {},
         onIncQuantity = {},

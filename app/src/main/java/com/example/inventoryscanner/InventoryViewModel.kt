@@ -81,33 +81,6 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
     private val _scanEvents = MutableSharedFlow<ScanEvent>(extraBufferCapacity = 8)
     val scanEvents: SharedFlow<ScanEvent> = _scanEvents
 
-//    init {
-//        // Подписка на изменения в БД
-//        viewModelScope.launch {
-//            repository.observeItems().collect { list ->
-//                val mapped = list.map { e ->
-//                    InventoryListItem(
-//                        code = e.code,
-//                        name = e.name,
-//                        status = if (e.status == ItemDbStatus.CHECKED_OUT)
-//                            ItemStatus.CHECKED_OUT else ItemStatus.AVAILABLE,
-//                        takenCount = e.takenCount,
-//                        quantity = e.quantity,
-//                        lastStatusTs = e.lastActionTs
-//                    )
-//                }
-//                // Сортировка: ВЗЯТО сверху, свежие (lastStatusTs) первыми
-//                val sorted = mapped.sortedWith(
-//                    compareByDescending<InventoryListItem> { it.status == ItemStatus.CHECKED_OUT }
-//                        .thenByDescending { it.lastStatusTs ?: 0L }
-//                )
-//                _items.value = sorted
-//            }
-//        }
-//    }
-
-// ... (предыдущий код до init без изменений)
-
     init {
         // Подписка на изменения в БД
         viewModelScope.launch {
@@ -142,7 +115,6 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
                     if (changed) {
                         _items.value = newList
                     }
-                    // Если ничего не изменилось — не триггерим обновление
                 } else {
                     _items.value = sorted
                 }
@@ -150,7 +122,6 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    // ... (остальной код без изменений)
     fun onBarcodeScanned(code: String) {
         val now = System.currentTimeMillis()
         _uiState.value = _uiState.value.copy(
@@ -192,7 +163,7 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
                                 pendingReturnSetAt = now
                                 updateUI(
                                     ItemStatus.CHECKED_OUT,
-                                    "Код $code уже ВЗЯТО. Повторите скан в течение ${(doubleScanReturnWindowMs / 1000)}с чтобы вернуть."
+                                    "Нажмите повторно для возврата"
                                 )
                                 _scanEvents.tryEmit(ScanEvent.ReturnPending(code))
                             }
@@ -210,13 +181,10 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    // --- Оптимизированные функции изменения списка ---
-
     fun incQuantity(code: String) {
         viewModelScope.launch {
             try {
                 repository.incQuantity(code, 1)
-                // Мутируем только нужный элемент локального списка
                 val currentList = _items.value.toMutableList()
                 val idx = currentList.indexOfFirst { it.code == code }
                 if (idx >= 0) {
@@ -234,7 +202,6 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             try {
                 repository.decQuantity(code)
-                // Мутируем только нужный элемент локального списка
                 val currentList = _items.value.toMutableList()
                 val idx = currentList.indexOfFirst { it.code == code }
                 if (idx >= 0 && currentList[idx].quantity > 0) {
@@ -253,7 +220,6 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 val q = quantity.coerceAtLeast(0)
                 repository.setQuantity(code, q)
-                // Мутируем только нужный элемент локального списка
                 val currentList = _items.value.toMutableList()
                 val idx = currentList.indexOfFirst { it.code == code }
                 if (idx >= 0) {
@@ -294,7 +260,6 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             try {
                 repository.deleteItem(code, deleteLogs)
-                // Мутируем только нужный элемент локального списка
                 val currentList = _items.value.toMutableList()
                 val idx = currentList.indexOfFirst { it.code == code }
                 if (idx >= 0) {
@@ -351,7 +316,6 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
                     showDialog = true
                 )
             } catch (_: Exception) {
-                // Можно добавить лог (Log.d / Timber) при необходимости
             }
         }
     }
