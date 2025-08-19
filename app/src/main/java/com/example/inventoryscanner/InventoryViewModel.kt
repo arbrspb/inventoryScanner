@@ -81,6 +81,31 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
     private val _scanEvents = MutableSharedFlow<ScanEvent>(extraBufferCapacity = 8)
     val scanEvents: SharedFlow<ScanEvent> = _scanEvents
 
+//    init {
+//        // Подписка на изменения в БД
+//        viewModelScope.launch {
+//            repository.observeItems().collect { list ->
+//                val mapped = list.map { e ->
+//                    InventoryListItem(
+//                        code = e.code,
+//                        name = e.name,
+//                        status = if (e.status == ItemDbStatus.CHECKED_OUT)
+//                            ItemStatus.CHECKED_OUT else ItemStatus.AVAILABLE,
+//                        takenCount = e.takenCount,
+//                        quantity = e.quantity,
+//                        lastStatusTs = e.lastActionTs
+//                    )
+//                }
+//                // Сортировка: ВЗЯТО сверху, свежие (lastStatusTs) первыми
+//                val sorted = mapped.sortedWith(
+//                    compareByDescending<InventoryListItem> { it.status == ItemStatus.CHECKED_OUT }
+//                        .thenByDescending { it.lastStatusTs ?: 0L }
+//                )
+//                _items.value = sorted
+//            }
+//        }
+//    }
+
     init {
         // Подписка на изменения в БД
         viewModelScope.launch {
@@ -101,7 +126,25 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
                     compareByDescending<InventoryListItem> { it.status == ItemStatus.CHECKED_OUT }
                         .thenByDescending { it.lastStatusTs ?: 0L }
                 )
-                _items.value = sorted
+
+                // --- Оптимизация: мутировать только изменённые элементы ---
+                val oldList = _items.value
+                if (oldList.size == sorted.size) {
+                    val newList = oldList.toMutableList()
+                    var changed = false
+                    for (i in sorted.indices) {
+                        if (oldList[i] != sorted[i]) {
+                            newList[i] = sorted[i]
+                            changed = true
+                        }
+                    }
+                    if (changed) {
+                        _items.value = newList
+                    }
+                    // Если ничего не изменилось — не триггерим обновление
+                } else {
+                    _items.value = sorted
+                }
             }
         }
     }
@@ -165,10 +208,20 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // --- Оптимизированные функции изменения списка ---
+
     fun incQuantity(code: String) {
         viewModelScope.launch {
             try {
                 repository.incQuantity(code, 1)
+                // Мутируем только нужный элемент локального списка
+                val currentList = _items.value.toMutableList()
+                val idx = currentList.indexOfFirst { it.code == code }
+                if (idx >= 0) {
+                    val item = currentList[idx]
+                    currentList[idx] = item.copy(quantity = item.quantity + 1)
+                    _items.value = currentList
+                }
             } catch (e: Exception) {
                 updateUI(ItemStatus.ERROR, "Ошибка увеличения количества: ${e.message}")
             }
@@ -179,6 +232,14 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             try {
                 repository.decQuantity(code)
+                // Мутируем только нужный элемент локального списка
+                val currentList = _items.value.toMutableList()
+                val idx = currentList.indexOfFirst { it.code == code }
+                if (idx >= 0 && currentList[idx].quantity > 0) {
+                    val item = currentList[idx]
+                    currentList[idx] = item.copy(quantity = item.quantity - 1)
+                    _items.value = currentList
+                }
             } catch (e: Exception) {
                 updateUI(ItemStatus.ERROR, "Ошибка уменьшения количества: ${e.message}")
             }
@@ -188,7 +249,16 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
     fun setQuantity(code: String, quantity: Int) {
         viewModelScope.launch {
             try {
-                repository.setQuantity(code, quantity.coerceAtLeast(0))
+                val q = quantity.coerceAtLeast(0)
+                repository.setQuantity(code, q)
+                // Мутируем только нужный элемент локального списка
+                val currentList = _items.value.toMutableList()
+                val idx = currentList.indexOfFirst { it.code == code }
+                if (idx >= 0) {
+                    val item = currentList[idx]
+                    currentList[idx] = item.copy(quantity = q)
+                    _items.value = currentList
+                }
             } catch (e: Exception) {
                 updateUI(ItemStatus.ERROR, "Ошибка установки количества: ${e.message}")
             }
@@ -222,6 +292,13 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             try {
                 repository.deleteItem(code, deleteLogs)
+                // Мутируем только нужный элемент локального списка
+                val currentList = _items.value.toMutableList()
+                val idx = currentList.indexOfFirst { it.code == code }
+                if (idx >= 0) {
+                    currentList.removeAt(idx)
+                    _items.value = currentList
+                }
                 if (_uiState.value.rawCode == code) _uiState.value = ScanUIState()
             } catch (e: Exception) {
                 updateUI(ItemStatus.ERROR, "Ошибка удаления $code: ${e.message}")
