@@ -2,24 +2,29 @@ package com.example.inventoryscanner
 
 import android.app.Application
 import android.content.Context
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inventoryscanner.data.AppDatabase
 import com.example.inventoryscanner.data.InventoryRepository
 import com.example.inventoryscanner.data.ItemDbStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-// ДОБАВЬТЕ ЭТИ ИМПОРТЫ рядом с остальными import
-import androidx.compose.runtime.Immutable
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.debounce
+import org.json.JSONArray
+import java.nio.charset.Charset
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 // --- Статусы для UI ---
 enum class ItemStatus {
@@ -35,7 +40,7 @@ data class ScanUIState(
     val isProcessing: Boolean = false
 )
 
-// --- Модель элемента в списке (добавили lastStatusTs) ---
+// --- Модель элемента в списке ---
 @Immutable
 data class InventoryListItem(
     val code: String,
@@ -43,7 +48,8 @@ data class InventoryListItem(
     val status: ItemStatus,
     val takenCount: Int,
     val quantity: Int,
-    val lastStatusTs: Long? = null
+    val lastStatusTs: Long? = null,
+    val lastStatusText: String = "—" // предформатированная дата для UI
 )
 
 // --- Состояние диалога сверки комплекта ---
@@ -75,6 +81,12 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
     private var pendingReturnCode: String? = null
     private var pendingReturnSetAt: Long = 0L
 
+    // Мини-настройки сглаживания списка
+    private val LIST_DEBOUNCE_MS = 24L
+
+    // Управление политикой сортировки: по времени или стабильно по коду
+    private val SORT_BY_TIME = false
+
     // UI состояния
     private val _uiState = MutableStateFlow(ScanUIState())
     val uiState: StateFlow<ScanUIState> = _uiState
@@ -91,38 +103,16 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
     private val _scanEvents = MutableSharedFlow<ScanEvent>(extraBufferCapacity = 8)
     val scanEvents: SharedFlow<ScanEvent> = _scanEvents
 
-//    init {
-//        // Подписка на изменения в БД
-//        viewModelScope.launch {
-//            repository.observeItems().collect { list ->
-//                val mapped = list.map { e ->
-//                    InventoryListItem(
-//                        code = e.code,
-//                        name = e.name,
-//                        status = if (e.status == ItemDbStatus.CHECKED_OUT)
-//                            ItemStatus.CHECKED_OUT else ItemStatus.AVAILABLE,
-//                        takenCount = e.takenCount,
-//                        quantity = e.quantity,
-//                        lastStatusTs = e.lastActionTs
-//                    )
-//                }
-//                // Сортировка: ВЗЯТО сверху, свежие (lastStatusTs) первыми
-//                val sorted = mapped.sortedWith(
-//                    compareByDescending<InventoryListItem> { it.status == ItemStatus.CHECKED_OUT }
-//                        .thenByDescending { it.lastStatusTs ?: 0L }
-//                )
-//                _items.value = sorted
-//            }
-//        }
-//    }
-
-// ... (предыдущий код до init без изменений)
-
     init {
+        // Подписка на изменения в БД с вынесенным маппингом и сортировкой с главного потока
         viewModelScope.launch {
             repository.observeItems()
                 .map { list ->
-                    list.map { e ->
+                    // ОДИН форматер на одну эмиссию (не на каждый элемент и не в UI)
+                    val df = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+                    val mapped = list.map { e ->
+                        val ts = e.lastActionTs
+                        val text = ts?.let { df.format(Date(it)) } ?: "—"
                         InventoryListItem(
                             code = e.code,
                             name = e.name,
@@ -130,21 +120,31 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
                                 ItemStatus.CHECKED_OUT else ItemStatus.AVAILABLE,
                             takenCount = e.takenCount,
                             quantity = e.quantity,
-                            lastStatusTs = e.lastActionTs
+                            lastStatusTs = ts,
+                            lastStatusText = text
                         )
-                    }.sortedWith(
-                        compareByDescending<InventoryListItem> { it.status == ItemStatus.CHECKED_OUT }
-                            .thenByDescending { it.lastStatusTs ?: 0L }
-                    )
+                    }
+                    if (SORT_BY_TIME) {
+                        mapped.sortedWith(
+                            compareByDescending<InventoryListItem> { it.status == ItemStatus.CHECKED_OUT }
+                                .thenByDescending { it.lastStatusTs ?: 0L }
+                        )
+                    } else {
+                        // Стабильная сортировка: меньше перестановок при скролле
+                        mapped.sortedWith(
+                            compareByDescending<InventoryListItem> { it.status == ItemStatus.CHECKED_OUT }
+                                .thenBy { it.code }
+                        )
+                    }
                 }
-                .flowOn(Dispatchers.Default) // тяжёлую работу уводим с главного потока
-                .distinctUntilChanged()      // пропускаем одинаковые списки
-                .debounce(16)                // сглаживаем бурсты (~1 кадр)
+                .flowOn(Dispatchers.Default) // тяжёлую работу — не на Main
+                .distinctUntilChanged()      // пропуск одинаковых списков
+                .conflate()                  // скидываем промежуточные обновления
+                .debounce(LIST_DEBOUNCE_MS)  // сгладить бурсты
                 .collect { sorted -> _items.value = sorted }
         }
     }
 
-    // ... (остальной код без изменений)
     fun onBarcodeScanned(code: String) {
         val now = System.currentTimeMillis()
         _uiState.value = _uiState.value.copy(
@@ -168,26 +168,23 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
                         pendingReturnCode = null
                         updateUI(
                             ItemStatus.CHECKED_OUT,
-                            "Код $code: ВЗЯТО (всего: ${existing.takenCount + 1})"
+                            "Код $code: ВЗЯТО (счётчик: ${existing.takenCount + 1})"
                         )
                         _scanEvents.tryEmit(ScanEvent.Taken(code))
                     } else {
-                        // Был CHECKED_OUT
+                        // Уже CHECKED_OUT → возврат
                         if (REQUIRE_DOUBLE_SCAN_TO_RETURN) {
-                            if (pendingReturnCode == code &&
-                                (now - pendingReturnSetAt) <= doubleScanReturnWindowMs
-                            ) {
+                            val same = (pendingReturnCode == existing.code)
+                            val stillInWindow = (now - pendingReturnSetAt) <= doubleScanReturnWindowMs
+                            if (same && stillInWindow) {
                                 repository.markReturned(existing, now, auto = false)
                                 pendingReturnCode = null
                                 updateUI(ItemStatus.AVAILABLE, "Код $code: ВОЗВРАЩЁН")
                                 _scanEvents.tryEmit(ScanEvent.Returned(code))
                             } else {
-                                pendingReturnCode = code
+                                pendingReturnCode = existing.code
                                 pendingReturnSetAt = now
-                                updateUI(
-                                    ItemStatus.CHECKED_OUT,
-                                    "Код $code уже ВЗЯТО. Повторите скан в течение ${(doubleScanReturnWindowMs / 1000)}с чтобы вернуть."
-                                )
+                                updateUI(ItemStatus.CHECKED_OUT, "Код $code: повторное сканирование для возврата")
                                 _scanEvents.tryEmit(ScanEvent.ReturnPending(code))
                             }
                         } else {
@@ -204,20 +201,10 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    // --- Оптимизированные функции изменения списка ---
-
     fun incQuantity(code: String) {
         viewModelScope.launch {
             try {
                 repository.incQuantity(code, 1)
-                // Мутируем только нужный элемент локального списка
-                val currentList = _items.value.toMutableList()
-                val idx = currentList.indexOfFirst { it.code == code }
-                if (idx >= 0) {
-                    val item = currentList[idx]
-                    currentList[idx] = item.copy(quantity = item.quantity + 1)
-                    _items.value = currentList
-                }
             } catch (e: Exception) {
                 updateUI(ItemStatus.ERROR, "Ошибка увеличения количества: ${e.message}")
             }
@@ -228,47 +215,18 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             try {
                 repository.decQuantity(code)
-                // Мутируем только нужный элемент локального списка
-                val currentList = _items.value.toMutableList()
-                val idx = currentList.indexOfFirst { it.code == code }
-                if (idx >= 0 && currentList[idx].quantity > 0) {
-                    val item = currentList[idx]
-                    currentList[idx] = item.copy(quantity = item.quantity - 1)
-                    _items.value = currentList
-                }
             } catch (e: Exception) {
                 updateUI(ItemStatus.ERROR, "Ошибка уменьшения количества: ${e.message}")
             }
         }
     }
 
-    fun setQuantity(code: String, quantity: Int) {
+    fun setQuantity(code: String, q: Int) {
         viewModelScope.launch {
             try {
-                val q = quantity.coerceAtLeast(0)
                 repository.setQuantity(code, q)
-                // Мутируем только нужный элемент локального списка
-                val currentList = _items.value.toMutableList()
-                val idx = currentList.indexOfFirst { it.code == code }
-                if (idx >= 0) {
-                    val item = currentList[idx]
-                    currentList[idx] = item.copy(quantity = q)
-                    _items.value = currentList
-                }
             } catch (e: Exception) {
                 updateUI(ItemStatus.ERROR, "Ошибка установки количества: ${e.message}")
-            }
-        }
-    }
-
-    fun resetCurrentItemCount() {
-        val code = _uiState.value.rawCode ?: return
-        viewModelScope.launch {
-            try {
-                repository.resetTakenCount(code)
-                updateUI(_uiState.value.itemStatus, "Счётчик взятий обнулён для $code")
-            } catch (e: Exception) {
-                updateUI(ItemStatus.ERROR, "Ошибка сброса счётчика: ${e.message}")
             }
         }
     }
@@ -288,13 +246,6 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             try {
                 repository.deleteItem(code, deleteLogs)
-                // Мутируем только нужный элемент локального списка
-                val currentList = _items.value.toMutableList()
-                val idx = currentList.indexOfFirst { it.code == code }
-                if (idx >= 0) {
-                    currentList.removeAt(idx)
-                    _items.value = currentList
-                }
                 if (_uiState.value.rawCode == code) _uiState.value = ScanUIState()
             } catch (e: Exception) {
                 updateUI(ItemStatus.ERROR, "Ошибка удаления $code: ${e.message}")
@@ -325,27 +276,29 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    // --- Сверка комплекта (из assets/kit_template.json) ---
+    // --- Сверка комплекта (assets/kit_template.json) ---
     fun runKitCheck() {
         val ctx: Context = getApplication()
         viewModelScope.launch {
             try {
                 val template = loadKitTemplate(ctx)
                 val templateCodes = template.map { it.code }.toSet()
-                val currentCodes = items.value.map { it.code }.toSet()
-                val missing = (templateCodes - currentCodes).sorted()
-                val extra = (currentCodes - templateCodes).sorted()
-                val matched = templateCodes.size - missing.size
+                val currentCodes = _items.value.map { it.code }.toSet()
+
+                val missing = (templateCodes - currentCodes).toList().sorted()
+                val extra = (currentCodes - templateCodes).toList().sorted()
+                val matched = (templateCodes intersect currentCodes).size
+                val total = templateCodes.size
 
                 _kitCheckState.value = KitCheckState(
                     missing = missing,
                     extra = extra,
-                    totalTemplate = templateCodes.size,
+                    totalTemplate = total,
                     matched = matched,
                     showDialog = true
                 )
-            } catch (_: Exception) {
-                // Можно добавить лог (Log.d / Timber) при необходимости
+            } catch (e: Exception) {
+                updateUI(ItemStatus.ERROR, "Ошибка сверки: ${e.message}")
             }
         }
     }
@@ -354,15 +307,23 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
         _kitCheckState.update { it.copy(showDialog = false) }
     }
 
-    fun resetUiOnly() {
-        _uiState.value = ScanUIState()
+    private fun updateUI(status: ItemStatus, message: String) {
+        _uiState.update { it.copy(itemStatus = status, message = message, isProcessing = false) }
     }
 
-    private fun updateUI(status: ItemStatus, message: String) {
-        _uiState.value = _uiState.value.copy(
-            message = message,
-            itemStatus = status,
-            isProcessing = false
-        )
+    // --- Загрузка шаблона комплекта из assets/kit_template.json ---
+    private data class KitTemplateEntry(val code: String)
+
+    private fun loadKitTemplate(ctx: Context): List<KitTemplateEntry> {
+        val input = ctx.assets.open("kit_template.json")
+        val text = input.use { it.readBytes().toString(Charset.forName("UTF-8")) }
+        val arr = JSONArray(text)
+        val res = ArrayList<KitTemplateEntry>(arr.length())
+        for (i in 0 until arr.length()) {
+            val obj = arr.getJSONObject(i)
+            val code = obj.optString("code").trim()
+            if (code.isNotEmpty()) res.add(KitTemplateEntry(code))
+        }
+        return res
     }
 }
