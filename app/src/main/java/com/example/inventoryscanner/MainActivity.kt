@@ -9,25 +9,19 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -42,15 +36,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.inventoryscanner.ui.theme.InventoryScannerTheme
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 private const val CAMERA_REQ = 123
@@ -72,7 +68,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             InventoryScannerTheme {
                 val uiState by inventoryViewModel.uiState.collectAsState()
-                val items by inventoryViewModel.items.collectAsState()
                 val kitCheckState by inventoryViewModel.kitCheckState.collectAsState()
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
@@ -81,7 +76,7 @@ class MainActivity : ComponentActivity() {
                         message = uiState.message,
                         isProcessing = uiState.isProcessing,
                         itemStatus = uiState.itemStatus,
-                        items = items,
+                        itemsFlow = inventoryViewModel.items,
                         kitCheckState = kitCheckState,
                         onScanClicked = {
                             if (!hasCameraPermission()) {
@@ -99,7 +94,8 @@ class MainActivity : ComponentActivity() {
                         onDecQuantity = { code -> inventoryViewModel.decQuantity(code) },
                         onSetQuantity = { code, q -> inventoryViewModel.setQuantity(code, q) },
                         onKitCheck = { inventoryViewModel.runKitCheck() },
-                        onDismissKitDialog = { inventoryViewModel.dismissKitDialog() }
+                        onDismissKitDialog = { inventoryViewModel.dismissKitDialog() },
+                        useLiteRow = true
                     )
                 }
             }
@@ -156,7 +152,7 @@ fun InventoryScannerScreen(
     message: String,
     isProcessing: Boolean,
     itemStatus: ItemStatus,
-    items: List<InventoryListItem>,
+    itemsFlow: StateFlow<List<InventoryListItem>>,
     kitCheckState: KitCheckState,
     onScanClicked: () -> Unit,
     onResetClicked: () -> Unit,
@@ -167,25 +163,24 @@ fun InventoryScannerScreen(
     onDecQuantity: (String) -> Unit,
     onSetQuantity: (String, Int) -> Unit,
     onKitCheck: () -> Unit,
-    onDismissKitDialog: () -> Unit
+    onDismissKitDialog: () -> Unit,
+    useLiteRow: Boolean
 ) {
     val listState = rememberLazyListState()
 
-    // Отслеживаем только смену состояния скролла (start/stop), без перерисовок на каждый пиксель
-    var isScrolling by remember { mutableStateOf(false) }
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.isScrollInProgress }
-            .distinctUntilChanged()
-            .collect { isScrolling = it }
+    // «Заморозка» данных — применяем новые списки только когда скролл не идёт
+    var uiItems by remember { mutableStateOf(itemsFlow.value) }
+    LaunchedEffect(itemsFlow, listState) {
+        combine(
+            itemsFlow,
+            snapshotFlow { listState.isScrollInProgress }.distinctUntilChanged()
+        ) { list, scrolling -> list to scrolling }
+            .collect { (list, scrolling) ->
+                if (!scrolling) uiItems = list
+            }
     }
 
-    // «Заморозка» данных во время скролла
-    var uiItems by remember(items) { mutableStateOf(items) }
-    LaunchedEffect(items, isScrolling) {
-        if (!isScrolling) uiItems = items
-    }
-
-    // Диалоги вынесены на уровень экрана
+    // Диалоги на уровне экрана
     var qtyDialogItem by remember { mutableStateOf<InventoryListItem?>(null) }
     var qtyInput by remember { mutableStateOf(TextFieldValue("")) }
     var deleteDialogItem by remember { mutableStateOf<InventoryListItem?>(null) }
@@ -208,28 +203,28 @@ fun InventoryScannerScreen(
                 enabled = !isProcessing
             ) { Text("Сброс") }
 
-            OutlinedButton(
+            Button(
                 onClick = onKitCheck,
                 modifier = Modifier.weight(1f),
                 enabled = !isProcessing
             ) { Text("Сверка") }
         }
 
-        Spacer(Modifier.padding(4.dp))
+        Spacer(Modifier.height(8.dp))
 
         if (itemStatus == ItemStatus.CHECKED_OUT && !isProcessing) {
             Button(
                 onClick = onReturnClicked,
                 modifier = Modifier.fillMaxWidth()
             ) { Text("Вернуть последний") }
-            Spacer(Modifier.padding(4.dp))
+            Spacer(Modifier.height(8.dp))
         }
 
         Text(
             text = if (isProcessing) "$message ..." else message,
             style = MaterialTheme.typography.bodyMedium
         )
-        Spacer(Modifier.padding(4.dp))
+        Spacer(Modifier.height(8.dp))
 
         LazyColumn(
             state = listState,
@@ -240,20 +235,39 @@ fun InventoryScannerScreen(
             items(
                 items = uiItems,
                 key = { it.code },
-                contentType = { "inventory_row" }
+                contentType = { "inventory_row_lite" }
             ) { rowItem ->
-                EquipmentRow(
-                    item = rowItem,
-                    onToggle = onToggleCode,
-                    onRequestDelete = { deleteDialogItem = it },
-                    onRequestSetQuantity = {
-                        qtyDialogItem = it
-                        qtyInput = TextFieldValue(it.quantity.toString())
-                    },
-                    onIncQuantity = onIncQuantity,
-                    onDecQuantity = onDecQuantity,
-                    modifier = Modifier
-                )
+                if (useLiteRow) {
+                    EquipmentRowLite(
+                        item = rowItem,
+                        onToggle = onToggleCode,
+                        onRequestDelete = { deleteDialogItem = it },
+                        onRequestSetQuantity = {
+                            qtyDialogItem = it
+                            qtyInput = TextFieldValue(it.quantity.toString())
+                        },
+                        onIncQuantity = onIncQuantity,
+                        onDecQuantity = onDecQuantity,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp)
+                    )
+                } else {
+                    EquipmentRowMaterial(
+                        item = rowItem,
+                        onToggle = onToggleCode,
+                        onRequestDelete = { deleteDialogItem = it },
+                        onRequestSetQuantity = {
+                            qtyDialogItem = it
+                            qtyInput = TextFieldValue(it.quantity.toString())
+                        },
+                        onIncQuantity = onIncQuantity,
+                        onDecQuantity = onDecQuantity,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp)
+                    )
+                }
                 Divider()
             }
         }
@@ -318,17 +332,17 @@ fun InventoryScannerScreen(
                 Column {
                     Text("Шаблон: ${kitCheckState.matched}/${kitCheckState.totalTemplate} (${coverage}%)")
                     if (kitCheckState.missing.isNotEmpty()) {
-                        Spacer(Modifier.padding(4.dp))
+                        Spacer(Modifier.height(8.dp))
                         Text("Не найдено (${kitCheckState.missing.size}):", style = MaterialTheme.typography.labelSmall)
                         Text(kitCheckState.missing.joinToString(", "))
                     }
                     if (kitCheckState.extra.isNotEmpty()) {
-                        Spacer(Modifier.padding(4.dp))
+                        Spacer(Modifier.height(8.dp))
                         Text("Лишние (${kitCheckState.extra.size}):", style = MaterialTheme.typography.labelSmall)
                         Text(kitCheckState.extra.joinToString(", "))
                     }
                     if (kitCheckState.missing.isEmpty() && kitCheckState.extra.isEmpty()) {
-                        Spacer(Modifier.padding(4.dp))
+                        Spacer(Modifier.height(8.dp))
                         Text("Всё соответствует шаблону ✅")
                     }
                 }
@@ -338,8 +352,12 @@ fun InventoryScannerScreen(
     }
 }
 
+/*
+ Лёгкая строка списка (без Material-кнопок и без рипплов).
+ Используем indication = null и собственный MutableInteractionSource у каждого clickable.
+*/
 @Composable
-fun EquipmentRow(
+fun EquipmentRowLite(
     item: InventoryListItem,
     onToggle: (String) -> Unit,
     onRequestDelete: (InventoryListItem) -> Unit,
@@ -348,71 +366,141 @@ fun EquipmentRow(
     onDecQuantity: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        val statusText = if (item.status == ItemStatus.CHECKED_OUT) "ВЗЯТО" else "Свободно"
-        val statusColor = if (item.status == ItemStatus.CHECKED_OUT)
-            MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    val interaction = remember { MutableInteractionSource() }
 
+    Column(modifier = modifier) {
+        // Верхняя строка: имя/код + чип действия
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Column(Modifier.weight(1f)) {
+                BasicText(text = item.name ?: item.code, modifier = Modifier.padding(end = 8.dp))
+                BasicText(text = "Код: ${item.code}", modifier = Modifier.padding(top = 2.dp))
+            }
+            val isTaken = item.status == ItemStatus.CHECKED_OUT
+            val bg = if (isTaken) Color(0xFFFFE5E5) else Color(0xFFE6F4EA)
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(bg)
+                    .clickable(
+                        interactionSource = interaction,
+                        indication = null
+                    ) { onToggle(item.code) }
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                BasicText(text = if (isTaken) "Вернуть" else "Взять")
+            }
+        }
+
+        // Статус и дата
         Row(
-            modifier = Modifier
+            Modifier
                 .fillMaxWidth()
-                .padding(vertical = 6.dp),
+                .padding(top = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            val statusText = if (item.status == ItemStatus.CHECKED_OUT) "ВЗЯТО" else "Свободно"
+            BasicText(text = "Статус: $statusText (взят раз: ${item.takenCount})", modifier = Modifier.weight(1f))
+            BasicText(text = "Изм: ${item.lastStatusText}", modifier = Modifier.padding(start = 8.dp))
+        }
+
+        // Кол-во и удалить
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color(0xFFF1F1F1))
+                    .clickable(interactionSource = interaction, indication = null) { onDecQuantity(item.code) }
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+            ) { BasicText(text = "−") }
+
+            Spacer(Modifier.width(6.dp))
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color(0xFFF1F1F1))
+                    .clickable(interactionSource = interaction, indication = null) { onIncQuantity(item.code) }
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+            ) { BasicText(text = "+") }
+
+            Spacer(Modifier.width(10.dp))
+
+            BasicText(
+                text = "Кол: ${item.quantity}",
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .clickable(interactionSource = interaction, indication = null) { onRequestSetQuantity(item) }
+                    .padding(horizontal = 6.dp, vertical = 4.dp)
+            )
+
+            Spacer(Modifier.weight(1f))
+
+            BasicText(
+                text = "Удалить",
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color(0xFFFFF3E0))
+                    .clickable(interactionSource = interaction, indication = null) { onRequestDelete(item) }
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
+    }
+}
+
+/*
+ «Материальная» строка для сравнения (можно выключить useLiteRow, чтобы использовать её).
+*/
+@Composable
+fun EquipmentRowMaterial(
+    item: InventoryListItem,
+    onToggle: (String) -> Unit,
+    onRequestDelete: (InventoryListItem) -> Unit,
+    onRequestSetQuantity: (InventoryListItem) -> Unit,
+    onIncQuantity: (String) -> Unit,
+    onDecQuantity: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column(Modifier.weight(1f)) {
                 Text(text = item.name ?: item.code, style = MaterialTheme.typography.bodyLarge)
                 Text(text = "Код: ${item.code}", style = MaterialTheme.typography.bodySmall)
-                Text(
-                    text = "Статус: $statusText (взят раз: ${item.takenCount})",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = statusColor
-                )
-                Text(
-                    text = "Изм: ${item.lastStatusText}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(Modifier.padding(2.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = { onDecQuantity(item.code) },
-                        modifier = Modifier.size(28.dp)
-                    ) { Text("−", style = MaterialTheme.typography.labelSmall) }
-
-                    Spacer(Modifier.width(2.dp))
-
-                    IconButton(
-                        onClick = { onIncQuantity(item.code) },
-                        modifier = Modifier.size(28.dp)
-                    ) { Text("+", style = MaterialTheme.typography.labelSmall) }
-
-                    Spacer(Modifier.width(6.dp))
-
-                    Text(
-                        text = "Кол: ${item.quantity}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier
-                            .clickable { onRequestSetQuantity(item) }
-                            .padding(vertical = 2.dp)
-                    )
-                }
             }
-
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (item.status == ItemStatus.CHECKED_OUT) {
-                    Button(onClick = { onToggle(item.code) }) { Text("Вернуть") }
-                } else {
-                    OutlinedButton(onClick = { onToggle(item.code) }) { Text("Взять") }
-                }
-                OutlinedButton(onClick = { onRequestDelete(item) }) { Text("Удалить") }
+            TextButton(onClick = { onToggle(item.code) }) {
+                Text(if (item.status == ItemStatus.CHECKED_OUT) "Вернуть" else "Взять")
             }
+        }
+
+        val statusText = if (item.status == ItemStatus.CHECKED_OUT) "ВЗЯТО" else "Свободно"
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = "Статус: $statusText (взят раз: ${item.takenCount})", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+            Text(text = "Изм: ${item.lastStatusText}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(onClick = { onDecQuantity(item.code) }) { Text("−") }
+            Spacer(Modifier.width(4.dp))
+            TextButton(onClick = { onIncQuantity(item.code) }) { Text("+") }
+            Spacer(Modifier.width(10.dp))
+            Text(text = "Кол: ${item.quantity}", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.clickable { onRequestSetQuantity(item) })
+            Spacer(Modifier.weight(1f))
+            TextButton(onClick = { onRequestDelete(item) }) { Text("Удалить") }
         }
     }
 }
@@ -420,30 +508,14 @@ fun EquipmentRow(
 @Preview(showBackground = true)
 @Composable
 fun InventoryScannerPreview() {
-    val now = System.currentTimeMillis()
-    val df = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
     InventoryScannerScreen(
         message = "Пример",
         isProcessing = false,
         itemStatus = ItemStatus.AVAILABLE,
-        items = listOf(
-            InventoryListItem(
-                code = "CODE1",
-                name = "Trubosound iq",
-                status = ItemStatus.AVAILABLE,
-                takenCount = 0,
-                quantity = 5,
-                lastStatusTs = now,
-                lastStatusText = df.format(Date(now))
-            ),
-            InventoryListItem(
-                code = "CODE2",
-                name = null,
-                status = ItemStatus.CHECKED_OUT,
-                takenCount = 3,
-                quantity = 2,
-                lastStatusTs = now - 3600_000,
-                lastStatusText = df.format(Date(now - 3600_000))
+        itemsFlow = MutableStateFlow(
+            listOf(
+                InventoryListItem("CODE1", "Trubosound iq", ItemStatus.AVAILABLE, 0, 5, System.currentTimeMillis(), "19.08.2025 19:00"),
+                InventoryListItem("CODE2", null, ItemStatus.CHECKED_OUT, 3, 2, System.currentTimeMillis() - 3600_000, "19.08.2025 18:00")
             )
         ),
         kitCheckState = KitCheckState(),
@@ -456,6 +528,7 @@ fun InventoryScannerPreview() {
         onDecQuantity = {},
         onSetQuantity = { _, _ -> },
         onKitCheck = {},
-        onDismissKitDialog = {}
+        onDismissKitDialog = {},
+        useLiteRow = true
     )
 }

@@ -81,8 +81,8 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
     private var pendingReturnCode: String? = null
     private var pendingReturnSetAt: Long = 0L
 
-    // Мини-настройки сглаживания списка
-    private val LIST_DEBOUNCE_MS = 24L
+    // Сглаживание списка: немного больше пауза, чтобы меньше тревожить UI
+    private val LIST_DEBOUNCE_MS = 40L
 
     // Управление политикой сортировки: по времени или стабильно по коду
     private val SORT_BY_TIME = false
@@ -108,7 +108,7 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             repository.observeItems()
                 .map { list ->
-                    // ОДИН форматер на одну эмиссию (не на каждый элемент и не в UI)
+                    // ОДИН форматер на одну эмиссию
                     val df = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
                     val mapped = list.map { e ->
                         val ts = e.lastActionTs
