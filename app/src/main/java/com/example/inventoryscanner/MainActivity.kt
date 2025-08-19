@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.*
@@ -142,6 +143,9 @@ fun InventoryScannerScreen(
     onKitCheck: () -> Unit,
     onDismissKitDialog: () -> Unit
 ) {
+
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -184,6 +188,7 @@ fun InventoryScannerScreen(
         Spacer(Modifier.height(8.dp))
 
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
