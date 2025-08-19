@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-
 import androidx.compose.material3.*
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.*
@@ -28,8 +27,7 @@ import com.example.inventoryscanner.ui.theme.InventoryScannerTheme
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.lazy.rememberLazyListState
-
+// удалён дублирующий импорт rememberLazyListState
 
 //private val overscroll: Any
 //private val overscroll: Any
@@ -210,11 +208,12 @@ fun InventoryScannerScreen(
                     onIncQuantity = onIncQuantity,
                     onDecQuantity = onDecQuantity,
                     onSetQuantity = onSetQuantity,
-                    modifier = Modifier // без animateItemPlacement
+                    modifier = Modifier // без анимации перестановки
                 )
                 Divider()
             }
         }
+    } // ← ДОБАВЛЕНА СКОБКА: закрываем Column
 
     if (kitCheckState.showDialog) {
         val coverage = if (kitCheckState.totalTemplate == 0) 0
@@ -254,134 +253,135 @@ fun InventoryScannerScreen(
     }
 }
 
-    @Composable
-    fun EquipmentRow(
-        item: InventoryListItem,
-        onToggle: (String) -> Unit,
-        onDelete: (String) -> Unit,
-        onIncQuantity: (String) -> Unit,
-        onDecQuantity: (String) -> Unit,
-        onSetQuantity: (String, Int) -> Unit,
-        modifier: Modifier = Modifier
-    ) {
-        Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(vertical = 6.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-    var showQtyDialog by remember { mutableStateOf(false) }
-    var qtyInput by remember { mutableStateOf(TextFieldValue(item.quantity.toString())) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
-    if (showQtyDialog) {
-        AlertDialog(
-            onDismissRequest = { showQtyDialog = false },
-            title = { Text("Установить количество") },
-            text = {
-                OutlinedTextField(
-                    value = qtyInput,
-                    onValueChange = { v ->
-                        if (v.text.all { it.isDigit() } || v.text.isEmpty()) {
-                            qtyInput = v
-                        }
-                    },
-                    singleLine = true,
-                    label = { Text("Количество") }
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val value = qtyInput.text.toIntOrNull()
-                    if (value != null) onSetQuantity(item.code, value)
-                    showQtyDialog = false
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showQtyDialog = false }) { Text("Отмена") }
-            }
-        )
-    }
-
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Подтверждение") },
-            text = { Text("Удалить код ${item.code}?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDeleteDialog = false
-                    onDelete(item.code)
-                }) { Text("Удалить") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Отмена") }
-            }
-        )
-    }
-
-    val statusText = if (item.status == ItemStatus.CHECKED_OUT) "ВЗЯТО" else "Свободно"
-    val statusColor = if (item.status == ItemStatus.CHECKED_OUT)
-        MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-
+@Composable
+fun EquipmentRow(
+    item: InventoryListItem,
+    onToggle: (String) -> Unit,
+    onDelete: (String) -> Unit,
+    onIncQuantity: (String) -> Unit,
+    onDecQuantity: (String) -> Unit,
+    onSetQuantity: (String, Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(Modifier.weight(1f)) {
-            Text(text = item.name ?: item.code, style = MaterialTheme.typography.bodyLarge)
-            Text(text = "Код: ${item.code}", style = MaterialTheme.typography.bodySmall)
-            Text(
-                text = "Статус: $statusText (взят раз: ${item.takenCount})",
-                style = MaterialTheme.typography.bodySmall,
-                color = statusColor
-            )
-            Text(
-                text = "Изм: ${formatStatusTime(item.lastStatusTs)}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(4.dp))
+        var showQtyDialog by remember { mutableStateOf(false) }
+        var qtyInput by remember { mutableStateOf(TextFieldValue(item.quantity.toString())) }
+        var showDeleteDialog by remember { mutableStateOf(false) }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = { onDecQuantity(item.code) },
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Text("−", style = MaterialTheme.typography.labelSmall)
+        if (showQtyDialog) {
+            AlertDialog(
+                onDismissRequest = { showQtyDialog = false },
+                title = { Text("Установить количество") },
+                text = {
+                    OutlinedTextField(
+                        value = qtyInput,
+                        onValueChange = { v ->
+                            if (v.text.all { it.isDigit() } || v.text.isEmpty()) {
+                                qtyInput = v
+                            }
+                        },
+                        singleLine = true,
+                        label = { Text("Количество") }
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val value = qtyInput.text.toIntOrNull()
+                        if (value != null) onSetQuantity(item.code, value)
+                        showQtyDialog = false
+                    }) { Text("OK") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showQtyDialog = false }) { Text("Отмена") }
                 }
-                Spacer(Modifier.width(2.dp))
-                IconButton(
-                    onClick = { onIncQuantity(item.code) },
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Text("+", style = MaterialTheme.typography.labelSmall)
-                }
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    text = "Кол: ${item.quantity}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier
-                        .clickable {
-                            qtyInput = TextFieldValue(item.quantity.toString())
-                            showQtyDialog = true
-                        }
-                        .padding(vertical = 2.dp)
-                )
-            }
+            )
         }
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (item.status == ItemStatus.CHECKED_OUT) {
-                Button(onClick = { onToggle(item.code) }) { Text("Вернуть") }
-            } else {
-                OutlinedButton(onClick = { onToggle(item.code) }) { Text("Взять") }
+
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text("Подтверждение") },
+                text = { Text("Удалить код ${item.code}?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDeleteDialog = false
+                        onDelete(item.code)
+                    }) { Text("Удалить") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false }) { Text("Отмена") }
+                }
+            )
+        }
+
+        val statusText = if (item.status == ItemStatus.CHECKED_OUT) "ВЗЯТО" else "Свободно"
+        val statusColor = if (item.status == ItemStatus.CHECKED_OUT)
+            MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(text = item.name ?: item.code, style = MaterialTheme.typography.bodyLarge)
+                Text(text = "Код: ${item.code}", style = MaterialTheme.typography.bodySmall)
+                Text(
+                    text = "Статус: $statusText (взят раз: ${item.takenCount})",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = statusColor
+                )
+                Text(
+                    text = "Изм: ${formatStatusTime(item.lastStatusTs)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(4.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = { onDecQuantity(item.code) },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Text("−", style = MaterialTheme.typography.labelSmall)
+                    }
+                    Spacer(Modifier.width(2.dp))
+                    IconButton(
+                        onClick = { onIncQuantity(item.code) },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Text("+", style = MaterialTheme.typography.labelSmall)
+                    }
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "Кол: ${item.quantity}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .clickable {
+                                qtyInput = TextFieldValue(item.quantity.toString())
+                                showQtyDialog = true
+                            }
+                            .padding(vertical = 2.dp)
+                    )
+                }
             }
-            OutlinedButton(onClick = { showDeleteDialog = true }) { Text("Удалить") }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (item.status == ItemStatus.CHECKED_OUT) {
+                    Button(onClick = { onToggle(item.code) }) { Text("Вернуть") }
+                } else {
+                    OutlinedButton(onClick = { onToggle(item.code) }) { Text("Взять") }
+                }
+                OutlinedButton(onClick = { showDeleteDialog = true }) { Text("Удалить") }
+            }
         }
     }
-}
+} // ← ДОБАВЛЕНА СКОБКА: закрываем функцию EquipmentRow
 
 @Preview(showBackground = true)
 @Composable
