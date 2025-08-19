@@ -27,6 +27,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.inventoryscanner.ui.theme.InventoryScannerTheme
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.lazy.rememberLazyListState
+
 
 //private val overscroll: Any
 //private val overscroll: Any
@@ -206,12 +209,12 @@ fun InventoryScannerScreen(
                     onDelete = onDeleteCode,
                     onIncQuantity = onIncQuantity,
                     onDecQuantity = onDecQuantity,
-                    onSetQuantity = onSetQuantity
+                    onSetQuantity = onSetQuantity,
+                    modifier = Modifier // без animateItemPlacement
                 )
                 Divider()
             }
         }
-    }
 
     if (kitCheckState.showDialog) {
         val coverage = if (kitCheckState.totalTemplate == 0) 0
@@ -251,15 +254,22 @@ fun InventoryScannerScreen(
     }
 }
 
-@Composable
-fun EquipmentRow(
-    item: InventoryListItem,
-    onToggle: (String) -> Unit,
-    onDelete: (String) -> Unit,
-    onIncQuantity: (String) -> Unit,
-    onDecQuantity: (String) -> Unit,
-    onSetQuantity: (String, Int) -> Unit
-) {
+    @Composable
+    fun EquipmentRow(
+        item: InventoryListItem,
+        onToggle: (String) -> Unit,
+        onDelete: (String) -> Unit,
+        onIncQuantity: (String) -> Unit,
+        onDecQuantity: (String) -> Unit,
+        onSetQuantity: (String, Int) -> Unit,
+        modifier: Modifier = Modifier
+    ) {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
     var showQtyDialog by remember { mutableStateOf(false) }
     var qtyInput by remember { mutableStateOf(TextFieldValue(item.quantity.toString())) }
     var showDeleteDialog by remember { mutableStateOf(false) }

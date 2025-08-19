@@ -13,6 +13,13 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+// ДОБАВЬТЕ ЭТИ ИМПОРТЫ рядом с остальными import
+import androidx.compose.runtime.Immutable
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.debounce
 
 // --- Статусы для UI ---
 enum class ItemStatus {
@@ -20,6 +27,7 @@ enum class ItemStatus {
 }
 
 // --- UI состояния сканирования ---
+@Immutable
 data class ScanUIState(
     val rawCode: String? = null,
     val message: String = "Результат сканирования будет тут",
@@ -28,6 +36,7 @@ data class ScanUIState(
 )
 
 // --- Модель элемента в списке (добавили lastStatusTs) ---
+@Immutable
 data class InventoryListItem(
     val code: String,
     val name: String?,
@@ -38,6 +47,7 @@ data class InventoryListItem(
 )
 
 // --- Состояние диалога сверки комплекта ---
+@Immutable
 data class KitCheckState(
     val missing: List<String> = emptyList(),
     val extra: List<String> = emptyList(),
@@ -109,44 +119,28 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
 // ... (предыдущий код до init без изменений)
 
     init {
-        // Подписка на изменения в БД
         viewModelScope.launch {
-            repository.observeItems().collect { list ->
-                val mapped = list.map { e ->
-                    InventoryListItem(
-                        code = e.code,
-                        name = e.name,
-                        status = if (e.status == ItemDbStatus.CHECKED_OUT)
-                            ItemStatus.CHECKED_OUT else ItemStatus.AVAILABLE,
-                        takenCount = e.takenCount,
-                        quantity = e.quantity,
-                        lastStatusTs = e.lastActionTs
+            repository.observeItems()
+                .map { list ->
+                    list.map { e ->
+                        InventoryListItem(
+                            code = e.code,
+                            name = e.name,
+                            status = if (e.status == ItemDbStatus.CHECKED_OUT)
+                                ItemStatus.CHECKED_OUT else ItemStatus.AVAILABLE,
+                            takenCount = e.takenCount,
+                            quantity = e.quantity,
+                            lastStatusTs = e.lastActionTs
+                        )
+                    }.sortedWith(
+                        compareByDescending<InventoryListItem> { it.status == ItemStatus.CHECKED_OUT }
+                            .thenByDescending { it.lastStatusTs ?: 0L }
                     )
                 }
-                // Сортировка: ВЗЯТО сверху, свежие (lastStatusTs) первыми
-                val sorted = mapped.sortedWith(
-                    compareByDescending<InventoryListItem> { it.status == ItemStatus.CHECKED_OUT }
-                        .thenByDescending { it.lastStatusTs ?: 0L }
-                )
-                // --- ОПТИМИЗАЦИЯ ---
-                val oldList = _items.value
-                if (oldList.size == sorted.size) {
-                    val newList = oldList.toMutableList()
-                    var changed = false
-                    for (i in sorted.indices) {
-                        if (oldList[i] != sorted[i]) {
-                            newList[i] = sorted[i]
-                            changed = true
-                        }
-                    }
-                    if (changed) {
-                        _items.value = newList
-                    }
-                    // Если ничего не изменилось — не триггерим обновление
-                } else {
-                    _items.value = sorted
-                }
-            }
+                .flowOn(Dispatchers.Default) // тяжёлую работу уводим с главного потока
+                .distinctUntilChanged()      // пропускаем одинаковые списки
+                .debounce(16)                // сглаживаем бурсты (~1 кадр)
+                .collect { sorted -> _items.value = sorted }
         }
     }
 
