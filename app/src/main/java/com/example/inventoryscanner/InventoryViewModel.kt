@@ -106,6 +106,8 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
 //        }
 //    }
 
+// ... (предыдущий код до init без изменений)
+
     init {
         // Подписка на изменения в БД
         viewModelScope.launch {
@@ -126,8 +128,7 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
                     compareByDescending<InventoryListItem> { it.status == ItemStatus.CHECKED_OUT }
                         .thenByDescending { it.lastStatusTs ?: 0L }
                 )
-
-                // --- Оптимизация: мутировать только изменённые элементы ---
+                // --- ОПТИМИЗАЦИЯ ---
                 val oldList = _items.value
                 if (oldList.size == sorted.size) {
                     val newList = oldList.toMutableList()
@@ -149,6 +150,7 @@ class InventoryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // ... (остальной код без изменений)
     fun onBarcodeScanned(code: String) {
         val now = System.currentTimeMillis()
         _uiState.value = _uiState.value.copy(

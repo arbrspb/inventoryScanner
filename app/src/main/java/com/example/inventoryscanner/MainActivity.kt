@@ -159,7 +159,7 @@ fun InventoryScannerScreen(
                 onClick = onScanClicked,
                 modifier = Modifier.weight(1f),
                 enabled = !isProcessing
-            ) { Text("Сканировать") }
+            ) { Text("Скан") }
 
             Button(
                 onClick = onResetClicked,
