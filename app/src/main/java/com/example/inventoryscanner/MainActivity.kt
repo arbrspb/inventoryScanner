@@ -10,47 +10,26 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Divider
+
+import androidx.compose.material3.*
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.inventoryscanner.ui.theme.InventoryScannerTheme
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import androidx.paging.PagingData
-import androidx.paging.compose.collectAsLazyPagingItems
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 
+//private val overscroll: Any
+//private val overscroll: Any
 private const val CAMERA_REQ = 123
 
 class MainActivity : ComponentActivity() {
@@ -69,8 +48,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             InventoryScannerTheme {
-                val uiState by inventoryViewModel.uiState.collectAsState()
-                val kitCheckState by inventoryViewModel.kitCheckState.collectAsState()
+                val uiState by inventoryViewModel.uiState.collectAsStateWithLifecycle()
+                val items by inventoryViewModel.items.collectAsStateWithLifecycle()
+                val kitCheckState by inventoryViewModel.kitCheckState.collectAsStateWithLifecycle()
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
                     InventoryScannerScreen(
@@ -78,7 +58,7 @@ class MainActivity : ComponentActivity() {
                         message = uiState.message,
                         isProcessing = uiState.isProcessing,
                         itemStatus = uiState.itemStatus,
-                        pagedItemsFlow = inventoryViewModel.pagedItems,
+                        items = items,
                         kitCheckState = kitCheckState,
                         onScanClicked = {
                             if (!hasCameraPermission()) {
@@ -89,12 +69,14 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                         onResetClicked = { inventoryViewModel.resetAllCounts() },
+                        onReturnClicked = { inventoryViewModel.markReturned() },
                         onToggleCode = { code -> inventoryViewModel.onBarcodeScanned(code) },
                         onDeleteCode = { code -> inventoryViewModel.deleteItem(code, deleteLogs = false) },
                         onIncQuantity = { code -> inventoryViewModel.incQuantity(code) },
                         onDecQuantity = { code -> inventoryViewModel.decQuantity(code) },
                         onSetQuantity = { code, q -> inventoryViewModel.setQuantity(code, q) },
-                        onKitCheck = { inventoryViewModel.runKitCheck() }
+                        onKitCheck = { inventoryViewModel.runKitCheck() },
+                        onDismissKitDialog = { inventoryViewModel.dismissKitDialog() }
                     )
                 }
             }
@@ -151,7 +133,7 @@ fun InventoryScannerScreen(
     message: String,
     isProcessing: Boolean,
     itemStatus: ItemStatus,
-    pagedItemsFlow: Flow<PagingData<InventoryListItem>>,
+    items: List<InventoryListItem>,
     kitCheckState: KitCheckState,
     onScanClicked: () -> Unit,
     onResetClicked: () -> Unit,
@@ -164,14 +146,9 @@ fun InventoryScannerScreen(
     onKitCheck: () -> Unit,
     onDismissKitDialog: () -> Unit
 ) {
+
     val listState = rememberLazyListState()
-    val lazyItems = pagedItemsFlow.collectAsLazyPagingItems()
-
-    // Диалоги
-    var qtyDialogItem by remember { mutableStateOf<InventoryListItem?>(null) }
-    var qtyInput by remember { mutableStateOf(TextFieldValue("")) }
-    var deleteDialogItem by remember { mutableStateOf<InventoryListItem?>(null) }
-
+    val coroutineScope = rememberCoroutineScope()
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -182,7 +159,7 @@ fun InventoryScannerScreen(
                 onClick = onScanClicked,
                 modifier = Modifier.weight(1f),
                 enabled = !isProcessing
-            ) { Text("Сканировать") }
+            ) { Text("Скан") }
 
             Button(
                 onClick = onResetClicked,
@@ -197,15 +174,21 @@ fun InventoryScannerScreen(
             ) { Text("Сверка") }
         }
 
-        Spacer(Modifier.padding(4.dp))
+        Spacer(Modifier.height(8.dp))
 
-
+        if (itemStatus == ItemStatus.CHECKED_OUT && !isProcessing) {
+            Button(
+                onClick = onReturnClicked,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Вернуть последний") }
+            Spacer(Modifier.height(8.dp))
+        }
 
         Text(
             text = if (isProcessing) "$message ..." else message,
             style = MaterialTheme.typography.bodyMedium
         )
-        Spacer(Modifier.padding(4.dp))
+        Spacer(Modifier.height(8.dp))
 
         LazyColumn(
             state = listState,
@@ -213,42 +196,77 @@ fun InventoryScannerScreen(
                 .weight(1f)
                 .fillMaxWidth()
         ) {
-            // Вариант без androidx.paging.compose.items:
             items(
-                count = lazyItems.itemCount,
-                key = { index -> lazyItems.peek(index)?.code ?: "placeholder-$index" }
-            ) { index ->
-                val rowItem = lazyItems[index]
-                if (rowItem != null) {
-                    EquipmentRow(
-                        item = rowItem,
-                        onToggle = onToggleCode,
-                        onRequestDelete = { deleteDialogItem = it },
-                        onRequestSetQuantity = {
-                            qtyDialogItem = it
-                            qtyInput = TextFieldValue(it.quantity.toString())
-                        },
-                        onIncQuantity = onIncQuantity,
-                        onDecQuantity = onDecQuantity,
-                        modifier = Modifier
-                    )
-                } else {
-                    // Плейсхолдер для не загруженной строки
-                    Spacer(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp)
-                    )
-                }
+                items = items,
+                key = { it.code }
+            ) { rowItem ->
+                EquipmentRow(
+                    item = rowItem,
+                    onToggle = onToggleCode,
+                    onDelete = onDeleteCode,
+                    onIncQuantity = onIncQuantity,
+                    onDecQuantity = onDecQuantity,
+                    onSetQuantity = onSetQuantity
+                )
                 Divider()
             }
         }
     }
 
-    // Диалог установки количества
-    qtyDialogItem?.let { item ->
+    if (kitCheckState.showDialog) {
+        val coverage = if (kitCheckState.totalTemplate == 0) 0
+        else (kitCheckState.matched * 100 / kitCheckState.totalTemplate)
         AlertDialog(
-            onDismissRequest = { qtyDialogItem = null },
+            onDismissRequest = onDismissKitDialog,
+            title = { Text("Сверка комплекта") },
+            text = {
+                Column {
+                    Text("Шаблон: ${kitCheckState.matched}/${kitCheckState.totalTemplate} (${coverage}%)")
+                    if (kitCheckState.missing.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Не найдено (${kitCheckState.missing.size}):",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                        Text(kitCheckState.missing.joinToString(", "))
+                    }
+                    if (kitCheckState.extra.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Лишние (${kitCheckState.extra.size}):",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                        Text(kitCheckState.extra.joinToString(", "))
+                    }
+                    if (kitCheckState.missing.isEmpty() && kitCheckState.extra.isEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text("Все соответствует шаблону ✅")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = onDismissKitDialog) { Text("OK") }
+            }
+        )
+    }
+}
+
+@Composable
+fun EquipmentRow(
+    item: InventoryListItem,
+    onToggle: (String) -> Unit,
+    onDelete: (String) -> Unit,
+    onIncQuantity: (String) -> Unit,
+    onDecQuantity: (String) -> Unit,
+    onSetQuantity: (String, Int) -> Unit
+) {
+    var showQtyDialog by remember { mutableStateOf(false) }
+    var qtyInput by remember { mutableStateOf(TextFieldValue(item.quantity.toString())) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showQtyDialog) {
+        AlertDialog(
+            onDismissRequest = { showQtyDialog = false },
             title = { Text("Установить количество") },
             text = {
                 OutlinedTextField(
@@ -266,139 +284,91 @@ fun InventoryScannerScreen(
                 TextButton(onClick = {
                     val value = qtyInput.text.toIntOrNull()
                     if (value != null) onSetQuantity(item.code, value)
-                    qtyDialogItem = null
+                    showQtyDialog = false
                 }) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { qtyDialogItem = null }) { Text("Отмена") }
+                TextButton(onClick = { showQtyDialog = false }) { Text("Отмена") }
             }
         )
     }
 
-    // Диалог удаления
-    deleteDialogItem?.let { item ->
+    if (showDeleteDialog) {
         AlertDialog(
-            onDismissRequest = { deleteDialogItem = null },
+            onDismissRequest = { showDeleteDialog = false },
             title = { Text("Подтверждение") },
             text = { Text("Удалить код ${item.code}?") },
             confirmButton = {
                 TextButton(onClick = {
-                    deleteDialogItem = null
-                    onDeleteCode(item.code)
+                    showDeleteDialog = false
+                    onDelete(item.code)
                 }) { Text("Удалить") }
             },
             dismissButton = {
-                TextButton(onClick = { deleteDialogItem = null }) { Text("Отмена") }
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Отмена") }
             }
         )
     }
 
-    // Диалог сверки комплекта
-    if (kitCheckState.showDialog) {
-        val coverage = if (kitCheckState.totalTemplate == 0) 0
-        else (kitCheckState.matched * 100 / kitCheckState.totalTemplate)
-        AlertDialog(
-            onDismissRequest = onDismissKitDialog,
-            title = { Text("Сверка комплекта") },
-            text = {
-                Column {
-                    Text("Шаблон: ${kitCheckState.matched}/${kitCheckState.totalTemplate} (${coverage}%)")
-                    if (kitCheckState.missing.isNotEmpty()) {
-                        Spacer(Modifier.padding(4.dp))
-                        Text("Не найдено (${kitCheckState.missing.size}):", style = MaterialTheme.typography.labelSmall)
-                        Text(kitCheckState.missing.joinToString(", "))
-                    }
-                    if (kitCheckState.extra.isNotEmpty()) {
-                        Spacer(Modifier.padding(4.dp))
-                        Text("Лишние (${kitCheckState.extra.size}):", style = MaterialTheme.typography.labelSmall)
-                        Text(kitCheckState.extra.joinToString(", "))
-                    }
-                    if (kitCheckState.missing.isEmpty() && kitCheckState.extra.isEmpty()) {
-                        Spacer(Modifier.padding(4.dp))
-                        Text("Всё соответствует шаблону ✅")
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = onDismissKitDialog) { Text("OK") } }
-        )
-    }
-}
+    val statusText = if (item.status == ItemStatus.CHECKED_OUT) "ВЗЯТО" else "Свободно"
+    val statusColor = if (item.status == ItemStatus.CHECKED_OUT)
+        MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
 
-@Composable
-fun EquipmentRow(
-    item: InventoryListItem,
-    onToggle: (String) -> Unit,
-    onRequestDelete: (InventoryListItem) -> Unit,
-    onRequestSetQuantity: (InventoryListItem) -> Unit,
-    onIncQuantity: (String) -> Unit,
-    onDecQuantity: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
     Row(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        val statusText = if (item.status == ItemStatus.CHECKED_OUT) "ВЗЯТО" else "Свободно"
-        val statusColor = if (item.status == ItemStatus.CHECKED_OUT)
-            MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+        Column(Modifier.weight(1f)) {
+            Text(text = item.name ?: item.code, style = MaterialTheme.typography.bodyLarge)
+            Text(text = "Код: ${item.code}", style = MaterialTheme.typography.bodySmall)
+            Text(
+                text = "Статус: $statusText (взят раз: ${item.takenCount})",
+                style = MaterialTheme.typography.bodySmall,
+                color = statusColor
+            )
+            Text(
+                text = "Изм: ${formatStatusTime(item.lastStatusTs)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(4.dp))
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 6.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(text = item.name ?: item.code, style = MaterialTheme.typography.bodyLarge)
-                Text(text = "Код: ${item.code}", style = MaterialTheme.typography.bodySmall)
-                Text(
-                    text = "Статус: $statusText (взят раз: ${item.takenCount})",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = statusColor
-                )
-                Text(
-                    text = "Изм: ${item.lastStatusText}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(Modifier.padding(2.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = { onDecQuantity(item.code) },
-                        modifier = Modifier.size(28.dp)
-                    ) { Text("−", style = MaterialTheme.typography.labelSmall) }
-
-                    Spacer(Modifier.width(2.dp))
-
-                    IconButton(
-                        onClick = { onIncQuantity(item.code) },
-                        modifier = Modifier.size(28.dp)
-                    ) { Text("+", style = MaterialTheme.typography.labelSmall) }
-
-                    Spacer(Modifier.width(6.dp))
-
-                    Text(
-                        text = "Кол: ${item.quantity}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier
-                            .clickable { onRequestSetQuantity(item) }
-                            .padding(vertical = 2.dp)
-                    )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = { onDecQuantity(item.code) },
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Text("−", style = MaterialTheme.typography.labelSmall)
                 }
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (item.status == ItemStatus.CHECKED_OUT) {
-                    Button(onClick = { onToggle(item.code) }) { Text("Вернуть") }
-                } else {
-                    OutlinedButton(onClick = { onToggle(item.code) }) { Text("Взять") }
+                Spacer(Modifier.width(2.dp))
+                IconButton(
+                    onClick = { onIncQuantity(item.code) },
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Text("+", style = MaterialTheme.typography.labelSmall)
                 }
-                OutlinedButton(onClick = { onRequestDelete(item) }) { Text("Удалить") }
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "Кол: ${item.quantity}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .clickable {
+                            qtyInput = TextFieldValue(item.quantity.toString())
+                            showQtyDialog = true
+                        }
+                        .padding(vertical = 2.dp)
+                )
             }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (item.status == ItemStatus.CHECKED_OUT) {
+                Button(onClick = { onToggle(item.code) }) { Text("Вернуть") }
+            } else {
+                OutlinedButton(onClick = { onToggle(item.code) }) { Text("Взять") }
+            }
+            OutlinedButton(onClick = { showDeleteDialog = true }) { Text("Удалить") }
         }
     }
 }
@@ -406,23 +376,24 @@ fun EquipmentRow(
 @Preview(showBackground = true)
 @Composable
 fun InventoryScannerPreview() {
-    val previewItems = listOf(
-        InventoryListItem("CODE1", "Trubosound iq", ItemStatus.AVAILABLE, 0, 5, System.currentTimeMillis(), "19.08.2025 19:00"),
-        InventoryListItem("CODE2", null, ItemStatus.CHECKED_OUT, 3, 2, System.currentTimeMillis() - 3600_000, "19.08.2025 18:00")
-    )
     InventoryScannerScreen(
         message = "Пример",
         isProcessing = false,
         itemStatus = ItemStatus.AVAILABLE,
-        pagedItemsFlow = flowOf(PagingData.from(previewItems)),
+        items = listOf(
+            InventoryListItem("CODE1", "Trubosound iq", ItemStatus.AVAILABLE, 0, 5, System.currentTimeMillis()),
+            InventoryListItem("CODE2", null, ItemStatus.CHECKED_OUT, 3, 2, System.currentTimeMillis() - 3600_000)
+        ),
         kitCheckState = KitCheckState(),
         onScanClicked = {},
         onResetClicked = {},
+        onReturnClicked = {},
         onToggleCode = {},
         onDeleteCode = {},
         onIncQuantity = {},
         onDecQuantity = {},
         onSetQuantity = { _, _ -> },
-        onKitCheck = {}
+        onKitCheck = {},
+        onDismissKitDialog = {}
     )
 }
