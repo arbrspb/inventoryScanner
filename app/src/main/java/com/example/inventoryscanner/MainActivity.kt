@@ -1,5 +1,3 @@
-@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
-
 package com.example.inventoryscanner
 
 import android.Manifest
@@ -11,22 +9,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -34,12 +25,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.inventoryscanner.ui.theme.InventoryScannerTheme
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.animation.Crossfade
-import androidx.compose.ui.graphics.Color
 
 private const val CAMERA_REQ = 123
 
@@ -62,29 +47,6 @@ class MainActivity : ComponentActivity() {
                 val uiState by inventoryViewModel.uiState.collectAsStateWithLifecycle()
                 val items by inventoryViewModel.items.collectAsStateWithLifecycle()
                 val kitCheckState by inventoryViewModel.kitCheckState.collectAsStateWithLifecycle()
-
-                val haptic = LocalHapticFeedback.current
-
-                // Сбор событий сканирования (звук + вибро)
-                LaunchedEffect(Unit) {
-                    inventoryViewModel.scanEvents.collect { ev ->
-                        when (ev) {
-                            is ScanEvent.Taken -> {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                playTone(ToneGenerator.TONE_PROP_ACK)
-                            }
-                            is ScanEvent.ReturnPending -> {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                playTone(ToneGenerator.TONE_PROP_BEEP)
-                            }
-                            is ScanEvent.Returned -> {
-                                // БЫЛО HeavyClick -> заменено на LongPress
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                playTone(ToneGenerator.TONE_PROP_BEEP2)
-                            }
-                        }
-                    }
-                }
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
                     InventoryScannerScreen(
@@ -180,8 +142,6 @@ fun InventoryScannerScreen(
     onKitCheck: () -> Unit,
     onDismissKitDialog: () -> Unit
 ) {
-    val listState = rememberLazyListState()
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -224,14 +184,13 @@ fun InventoryScannerScreen(
         Spacer(Modifier.height(8.dp))
 
         LazyColumn(
-            state = listState,
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
         ) {
             items(
                 items = items,
-                key = { it.code }          // стабильный ключ
+                key = { it.code }
             ) { rowItem ->
                 EquipmentRow(
                     item = rowItem,
@@ -239,8 +198,7 @@ fun InventoryScannerScreen(
                     onDelete = onDeleteCode,
                     onIncQuantity = onIncQuantity,
                     onDecQuantity = onDecQuantity,
-                    onSetQuantity = onSetQuantity,
-                    animatePlacement = true
+                    onSetQuantity = onSetQuantity
                 )
                 Divider()
             }
@@ -285,7 +243,6 @@ fun InventoryScannerScreen(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EquipmentRow(
     item: InventoryListItem,
@@ -293,8 +250,7 @@ fun EquipmentRow(
     onDelete: (String) -> Unit,
     onIncQuantity: (String) -> Unit,
     onDecQuantity: (String) -> Unit,
-    onSetQuantity: (String, Int) -> Unit,
-    animatePlacement: Boolean = false    // параметр оставляем чтобы не менять вызовы
+    onSetQuantity: (String, Int) -> Unit
 ) {
     var showQtyDialog by remember { mutableStateOf(false) }
     var qtyInput by remember { mutableStateOf(TextFieldValue(item.quantity.toString())) }
@@ -329,77 +285,46 @@ fun EquipmentRow(
         )
     }
 
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Подтверждение") },
+            text = { Text("Удалить код ${item.code}?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    onDelete(item.code)
+                }) { Text("Удалить") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Отмена") }
+            }
+        )
+    }
+
     val statusText = if (item.status == ItemStatus.CHECKED_OUT) "ВЗЯТО" else "Свободно"
     val statusColor = if (item.status == ItemStatus.CHECKED_OUT)
         MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
 
-    // Подсветка изменения статуса
-    val lastStatus = remember(item.code) { mutableStateOf(item.status) }
-    val justChanged = lastStatus.value != item.status
-    LaunchedEffect(item.status) {
-        lastStatus.value = item.status
-    }
-    val highlightColor by animateColorAsState(
-        targetValue = if (justChanged)
-            MaterialTheme.colorScheme.secondaryContainer
-        else
-            Color.Transparent,
-        animationSpec = tween(durationMillis = 550),
-        label = "rowHighlight"
-    )
-    val rowHeight by animateDpAsState(
-        targetValue = if (justChanged) 60.dp else 44.dp,
-        animationSpec = tween(durationMillis = 500),
-        label = "rowHeight"
-    )
-
-    // Анимация цвета количества (опционально)
-    val qtyAnimColor by animateColorAsState(
-        targetValue = if (justChanged) MaterialTheme.colorScheme.secondary
-        else MaterialTheme.colorScheme.onSurface,
-        animationSpec = tween(500),
-        label = "qtyColor"
-    )
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(rowHeight)
-            .padding(vertical = 6.dp)
-            .background(
-                color = highlightColor,
-                shape = RoundedCornerShape(4.dp)
-            )
-            .padding(6.dp),
+            .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Column(Modifier.weight(1f)) {
             Text(text = item.name ?: item.code, style = MaterialTheme.typography.bodyLarge)
             Text(text = "Код: ${item.code}", style = MaterialTheme.typography.bodySmall)
-
-            Crossfade(
-                targetState = item.status,
-                animationSpec = tween(250),
-                label = "statusCrossfade"
-            ) { st ->
-                val txt = if (st == ItemStatus.CHECKED_OUT) "ВЗЯТО" else "Свободно"
-                Text(
-                    text = "Статус: $txt (взят раз: ${item.takenCount})",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (st == ItemStatus.CHECKED_OUT)
-                        MaterialTheme.colorScheme.error
-                    else
-                        MaterialTheme.colorScheme.primary
-                )
-            }
-
-            val timeText = formatStatusTime(item.lastStatusTs)
             Text(
-                text = "Изм: $timeText",
+                text = "Статус: $statusText (взят раз: ${item.takenCount})",
+                style = MaterialTheme.typography.bodySmall,
+                color = statusColor
+            )
+            Text(
+                text = "Изм: ${formatStatusTime(item.lastStatusTs)}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
             Spacer(Modifier.height(4.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -420,7 +345,6 @@ fun EquipmentRow(
                 Text(
                     text = "Кол: ${item.quantity}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = qtyAnimColor,
                     modifier = Modifier
                         .clickable {
                             qtyInput = TextFieldValue(item.quantity.toString())
@@ -430,7 +354,6 @@ fun EquipmentRow(
                 )
             }
         }
-
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (item.status == ItemStatus.CHECKED_OUT) {
                 Button(onClick = { onToggle(item.code) }) { Text("Вернуть") }
@@ -439,23 +362,6 @@ fun EquipmentRow(
             }
             OutlinedButton(onClick = { showDeleteDialog = true }) { Text("Удалить") }
         }
-    }
-
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Подтверждение") },
-            text = { Text("Удалить код ${item.code}?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDeleteDialog = false
-                    onDelete(item.code)
-                }) { Text("Удалить") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Отмена") }
-            }
-        )
     }
 }
 
