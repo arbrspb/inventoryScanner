@@ -54,6 +54,7 @@ import com.journeyapps.barcodescanner.ScanOptions
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.ui.platform.LocalConfiguration
 
 private const val CAMERA_REQ = 123
 
@@ -240,7 +241,8 @@ fun InventoryScannerScreen(
         ) {
             items(
                 items = items,
-                key = { it.code }
+                key = { it.code }, // уже есть, но убедитесь, что используется
+                contentType = { "inventory_item" } // добавьте!
             ) { rowItem ->
                 EquipmentRow(
                     item = rowItem,
@@ -298,52 +300,13 @@ fun EquipmentRow(
     var qtyInput by remember { mutableStateOf(TextFieldValue(item.quantity.toString())) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    if (showQtyDialog) {
-        AlertDialog(
-            onDismissRequest = { showQtyDialog = false },
-            title = { Text("Установить количество") },
-            text = {
-                OutlinedTextField(
-                    value = qtyInput,
-                    onValueChange = { v ->
-                        if (v.text.all { it.isDigit() } || v.text.isEmpty()) {
-                            qtyInput = v
-                        }
-                    },
-                    singleLine = true,
-                    label = { Text("Количество") }
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val value = qtyInput.text.toIntOrNull()
-                    if (value != null) onSetQuantity(item.code, value)
-                    showQtyDialog = false
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showQtyDialog = false }) { Text("Отмена") }
-            }
-        )
+    val localeKey = LocalConfiguration.current.locales.toLanguageTags()
+    val dateFormatter = remember(localeKey) {
+        java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault())
     }
-
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Подтверждение") },
-            text = { Text("Удалить код ${item.code}?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDeleteDialog = false
-                    onDelete(item.code)
-                }) { Text("Удалить") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Отмена") }
-            }
-        )
+    val formattedTs = remember(item.lastStatusTs, dateFormatter) {
+        item.lastStatusTs?.let { ts -> dateFormatter.format(java.util.Date(ts)) } ?: "—"
     }
-
     val statusText = if (item.status == ItemStatus.CHECKED_OUT) "ВЗЯТО" else "Свободно"
 
     Row(
@@ -360,9 +323,8 @@ fun EquipmentRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            // Дата — под статусом, слева
             Text(
-                text = "Изм: ${formatStatusTime(item.lastStatusTs)}",
+                text = "Изм: $formattedTs",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -403,6 +365,52 @@ fun EquipmentRow(
             }
             OutlinedButton(onClick = { showDeleteDialog = true }) { Text("Удалить") }
         }
+    }
+
+    if (showQtyDialog) {
+        AlertDialog(
+            onDismissRequest = { showQtyDialog = false },
+            title = { Text("Установить количество") },
+            text = {
+                OutlinedTextField(
+                    value = qtyInput,
+                    onValueChange = { v ->
+                        if (v.text.all { it.isDigit() } || v.text.isEmpty()) {
+                            qtyInput = v
+                        }
+                    },
+                    singleLine = true,
+                    label = { Text("Количество") }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showQtyDialog = false
+                    val qty = qtyInput.text.toIntOrNull()
+                    if (qty != null) onSetQuantity(item.code, qty)
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showQtyDialog = false }) { Text("Отмена") }
+            }
+        )
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Подтверждение") },
+            text = { Text("Удалить код ${item.code}?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    onDelete(item.code)
+                }) { Text("Удалить") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Отмена") }
+            }
+        )
     }
 }
 
