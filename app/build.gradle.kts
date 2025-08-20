@@ -20,6 +20,7 @@ android {
     }
 
     buildTypes {
+        // релиз как был
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -27,7 +28,21 @@ android {
                 "proguard-rules.pro"
             )
         }
+        // явный debug (можно оставить пустым)
+        debug {
+            // debug как есть
+        }
+        // новый профильный тип сборки для инспектора/профилирования
+        create("profile") {
+            initWith(getByName("release"))   // берём настройки как у релиза
+            isDebuggable = true               // обязательно для Layout Inspector
+            matchingFallbacks += listOf("release")
+            signingConfig = signingConfigs.getByName("debug")
+            // при желании включите те же оптимизации, что и в release:
+            // isMinifyEnabled = false // или true, если в релизе включите R8
+        }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -60,6 +75,7 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
