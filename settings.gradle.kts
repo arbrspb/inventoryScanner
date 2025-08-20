@@ -20,5 +20,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "InventoryScanner"
-// <<< ДОБАВЬ ЭТУ СТРОКУ >>>
 include(":app")
+include(":baselineProfile")
