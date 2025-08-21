@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("kotlin-kapt")
-    alias(libs.plugins.baselineprofile)
+    alias(libs.plugins.baselineprofile) // alias должен быть описан в libs.versions.toml
 }
 
 android {
@@ -16,12 +16,10 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
-        // релиз как был
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -29,28 +27,25 @@ android {
                 "proguard-rules.pro"
             )
         }
-        // явный debug (можно оставить пустым)
-        debug {
-            // debug как есть
-        }
-        // новый профильный тип сборки для инспектора/профилирования
+        debug { }
+        // Не обязателен, но можно оставить
         create("profile") {
-            initWith(getByName("release"))   // берём настройки как у релиза
-            isDebuggable = true               // обязательно для Layout Inspector
+            initWith(getByName("release"))
+            isDebuggable = true
             matchingFallbacks += listOf("release")
             signingConfig = signingConfigs.getByName("debug")
-            // при желании включите те же оптимизации, что и в release:
-            // isMinifyEnabled = false // или true, если в релизе включите R8
         }
     }
 
+    // Переходим на Java 17
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
+
     buildFeatures {
         compose = true
     }
@@ -60,12 +55,15 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+
+    // Оставляем один BOM (или из catalogs, или явный) — не дублируем
     implementation(platform(libs.androidx.compose.bom))
+    // implementation(platform("androidx.compose:compose-bom:2024.09.00"))
+
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(platform("androidx.compose:compose-bom:2024.09.00"))
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.animation:animation")
 
@@ -74,7 +72,10 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
-    "baselineProfile"(project(":baselineprofile"))
+
+    // Подключаем модуль baselineProfile (именно с заглавной P в имени модуля)
+    "baselineProfile"(project(":baselineProfile"))
+
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
@@ -87,7 +88,9 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     implementation("androidx.paging:paging-runtime-ktx:3.3.2")
     implementation("androidx.paging:paging-compose:3.3.2")
-    implementation("androidx.profileinstaller:profileinstaller:1.3.1")
-    kapt("androidx.room:room-compiler:2.6.1")
 
+    // Нужна в приложении для установки сгенерированного профиля
+    implementation("androidx.profileinstaller:profileinstaller:1.3.1")
+
+    kapt("androidx.room:room-compiler:2.6.1")
 }
