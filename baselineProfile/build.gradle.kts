@@ -13,7 +13,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // Для какого модуля генерим профиль
+    // Целевой модуль для генерации профиля
     targetProjectPath = ":app"
 
     buildTypes {
@@ -35,10 +35,10 @@ kotlin {
 }
 
 dependencies {
-    // Обязательная зависимость: даёт BaselineProfileRule/startActivityAndWait/device
-    implementation(libs.androidx.profileinstaller) // вместо хардкода "1.3.1"
-    // Для UiDevice и взаимодействия с экраном
-    implementation("androidx.test.uiautomator:uiautomator:2.3.0")
-    // при необходимости:
-    // implementation("androidx.test:runner:1.5.2")
+    // Макробенчмарк для сбора baseline-профиля
+    implementation(libs.androidx.benchmark.macro.junit4)
+    // Для взаимодействия с экраном
+    implementation(libs.androidx.uiautomator)
+    // Установщик профиля (в APK — присутствует и в app)
+    implementation(libs.androidx.profileinstaller)
 }

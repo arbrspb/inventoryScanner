@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("kotlin-kapt")
-    alias(libs.plugins.baselineprofile) // alias должен быть описан в libs.versions.toml
+    alias(libs.plugins.baselineprofile)
 }
 
 android {
@@ -28,7 +28,6 @@ android {
             )
         }
         debug { }
-        // Не обязателен, но можно оставить
         create("profile") {
             initWith(getByName("release"))
             isDebuggable = true
@@ -37,7 +36,7 @@ android {
         }
     }
 
-    // Переходим на Java 17
+    // Java/Kotlin 17
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -56,10 +55,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
 
-    // Оставляем один BOM (или из catalogs, или явный) — не дублируем
     implementation(platform(libs.androidx.compose.bom))
-    // implementation(platform("androidx.compose:compose-bom:2024.09.00"))
-
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
@@ -73,7 +69,7 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
 
-    // Подключаем модуль baselineProfile (именно с заглавной P в имени модуля)
+    // Подключаем модуль baselineProfile
     "baselineProfile"(project(":baselineProfile"))
 
     debugImplementation(libs.androidx.ui.tooling)
@@ -89,8 +85,8 @@ dependencies {
     implementation("androidx.paging:paging-runtime-ktx:3.3.2")
     implementation("androidx.paging:paging-compose:3.3.2")
 
-    // Нужна в приложении для установки сгенерированного профиля
-    implementation("androidx.profileinstaller:profileinstaller:1.3.1")
+    // Используем версию из catalogs
+    implementation(libs.androidx.profileinstaller)
 
     kapt("androidx.room:room-compiler:2.6.1")
 }
