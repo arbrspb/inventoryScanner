@@ -7,14 +7,13 @@ plugins {
 android {
     namespace = "com.example.inventoryscanner.baselineprofile"
     compileSdk = 36
-
     defaultConfig {
         minSdk = 24
+        targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
-    // Целевой модуль приложения
     targetProjectPath = ":app"
+}
 
     // Добавляем buildType benchmark, т.к. ты его уже выбирал
     buildTypes {
