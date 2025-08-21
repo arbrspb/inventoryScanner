@@ -36,7 +36,7 @@ kotlin {
 
 dependencies {
     // Обязательная зависимость: даёт BaselineProfileRule/startActivityAndWait/device
-    implementation("androidx.benchmark:benchmark-macro-junit4:1.2.4")
+    implementation(libs.androidx.profileinstaller) // вместо хардкода "1.3.1"
     // Для UiDevice и взаимодействия с экраном
     implementation("androidx.test.uiautomator:uiautomator:2.3.0")
     // при необходимости:
