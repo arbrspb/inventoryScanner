@@ -1,7 +1,7 @@
 plugins {
-    id("com.android.test")
-    id("org.jetbrains.kotlin.android")
-    id("androidx.baselineprofile") version "1.3.3"
+    alias(libs.plugins.android.test)          // com.android.test
+    alias(libs.plugins.kotlin.android)        // org.jetbrains.kotlin.android
+    alias(libs.plugins.baselineprofile)       // androidx.baselineprofile
 }
 
 android {
@@ -13,9 +13,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Целевой модуль приложения
     targetProjectPath = ":app"
 
-    // Добавляем buildType benchmark, потому что IDE у тебя уже пытается его выбрать
+    // Добавляем buildType benchmark, т.к. ты его уже выбирал
     buildTypes {
         create("benchmark") {
             isDebuggable = true
@@ -32,16 +33,14 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
+    kotlinOptions { jvmTarget = "17" }
 }
 
 dependencies {
-    implementation("androidx.benchmark:benchmark-macro-junit4:1.2.4")
+    implementation(libs.androidx.benchmark.macro.junit4)
+    implementation(libs.androidx.uiautomator)
     implementation("androidx.test:runner:1.5.2")
     implementation("androidx.test:rules:1.5.0")
     implementation("androidx.test.ext:junit:1.1.5")
-    implementation("androidx.test.uiautomator:uiautomator:2.3.0")
-    implementation("androidx.profileinstaller:profileinstaller:1.4.1")
+    implementation(libs.androidx.profileinstaller)
 }
