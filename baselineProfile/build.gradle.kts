@@ -13,14 +13,13 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // Целевой модуль для генерации профиля
     targetProjectPath = ":app"
 
     buildTypes {
         create("benchmark") {
             isDebuggable = true
-            signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
@@ -35,10 +34,8 @@ kotlin {
 }
 
 dependencies {
-    // Макробенчмарк для сбора baseline-профиля
-    implementation(libs.androidx.benchmark.macro.junit4)
-    // Для взаимодействия с экраном
-    implementation(libs.androidx.uiautomator)
-    // Установщик профиля (в APK — присутствует и в app)
-    implementation(libs.androidx.profileinstaller)
+    implementation("androidx.benchmark:benchmark-macro-junit4:1.2.4")
+    implementation("androidx.test.uiautomator:uiautomator:2.3.0")
+    implementation("androidx.test.ext:junit:1.1.5")
+    implementation("androidx.profileinstaller:profileinstaller:1.4.1")
 }

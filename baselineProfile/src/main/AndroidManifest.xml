@@ -1,1 +1,3 @@
-<manifest package="com.example.inventoryscanner.baselineprofile" />
+<manifest>
+    <application />
+</manifest>
