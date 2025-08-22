@@ -11,12 +11,13 @@ private const val APPLICATION_ID = "com.example.inventoryscanner"
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class BaselineProfile {
+class BaselineProfileGenerator {
+
     @get:Rule
     val baselineRule = BaselineProfileRule()
 
     @Test
-    fun startup_scroll_openVerification() = baselineRule.collectPackageBaselineProfile(
+    fun startupSwipe() = baselineRule.collectBaselineProfile(
         packageName = APPLICATION_ID
     ) {
         startActivityAndWait()

@@ -15,7 +15,7 @@
       </SelectionState>
       <SelectionState runConfigName="Generate Baseline Profile for app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-08-20T23:54:21.394265200Z">
+        <DropdownSelection timestamp="2025-08-21T22:01:53.939643200Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="PhysicalDevice" identifier="serial=RF8N82JXGPM" />
